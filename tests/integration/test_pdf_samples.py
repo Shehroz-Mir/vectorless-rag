@@ -6,12 +6,11 @@ from pathlib import Path
 
 import pytest
 
+from tests.sample_pdfs import DEFAULT_DETECTION_RULES
 from vectorless_rag.models import FigureKind
-from vectorless_rag.pdf import detect_figure_pages, DetectionRules
+from vectorless_rag.pdf import detect_figure_pages
+
 SAMPLES = Path(__file__).resolve().parents[2] / "Data"
-RULES = DetectionRules(
-    min_image_area_ratio=0.03, min_graphic_cluster_ratio=0.01, max_cluster_text_density=5.0, min_vector_figure_area=0.02,
-)
 
 
 # Page lists from Spike D; the vector lists match the 28 illustrations labelled by eye.
@@ -35,7 +34,7 @@ pytestmark = pytest.mark.skipif(not SAMPLES.is_dir(), reason="sample PDFs in Dat
 def test_detection_matches_spike_d(filename: str) -> None:
     raster_expected, vector_expected = EXPECTED[filename]
 
-    pages = detect_figure_pages(SAMPLES / filename, RULES)
+    pages = detect_figure_pages(SAMPLES / filename, DEFAULT_DETECTION_RULES)
 
     raster = [p.page for p in pages if any(f.kind is FigureKind.RASTER for f in p.figures)]
     vector = [p.page for p in pages if any(f.kind is FigureKind.VECTOR for f in p.figures)]
@@ -43,6 +42,6 @@ def test_detection_matches_spike_d(filename: str) -> None:
 
 
 def test_sixty_of_180_pages_are_figure_pages() -> None:
-    total = sum(len(detect_figure_pages(SAMPLES / name, RULES)) for name in EXPECTED)
+    total = sum(len(detect_figure_pages(SAMPLES / name, DEFAULT_DETECTION_RULES)) for name in EXPECTED)
 
     assert total == 60

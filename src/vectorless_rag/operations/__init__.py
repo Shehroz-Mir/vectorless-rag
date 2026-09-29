@@ -1,4 +1,4 @@
-"""Use cases and their contracts: the ports adapters implement, domain errors, user keys."""
+"""Use cases (ingestion) and their contracts: the ports adapters implement, domain errors, user keys."""
 from vectorless_rag.operations.errors import (
     DocumentNotFound,
     DocumentNotReady,
@@ -10,6 +10,7 @@ from vectorless_rag.operations.errors import (
     VectorlessRagError,
     ViewPagesRejected,
 )
+from vectorless_rag.operations.ingestion import DocumentIngestion, IngestionRules, requeue_interrupted
 from vectorless_rag.operations.ports import (
     AnswerAgent,
     DetectFigurePages,
@@ -22,6 +23,7 @@ from vectorless_rag.operations.ports import (
     ReadPageTexts,
     UserIndex,
     UserIndexProvider,
+    UserLocks,
     WriteInvisibleNotes,
 )
 from vectorless_rag.operations.users import user_key_for
@@ -29,6 +31,7 @@ from vectorless_rag.operations.users import user_key_for
 __all__ = [
     "AnswerAgent",
     "DetectFigurePages",
+    "DocumentIngestion",
     "DocumentNotFound",
     "DocumentNotReady",
     "DocumentRepository",
@@ -37,6 +40,7 @@ __all__ = [
     "FigureRepository",
     "FileStore",
     "FileTooLarge",
+    "IngestionRules",
     "PageRenderer",
     "PageViewer",
     "ReadPageTexts",
@@ -45,8 +49,10 @@ __all__ = [
     "UnsupportedFile",
     "UserIndex",
     "UserIndexProvider",
+    "UserLocks",
     "VectorlessRagError",
     "ViewPagesRejected",
     "WriteInvisibleNotes",
+    "requeue_interrupted",
     "user_key_for",
 ]

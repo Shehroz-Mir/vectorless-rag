@@ -14,6 +14,7 @@ from pathlib import Path
 import pymupdf
 
 from vectorless_rag.models import BoundingBox, DetectedFigure, FigureKind, FigurePage
+from vectorless_rag.pdf.mupdf_lock import with_mupdf_lock
 from vectorless_rag.pdf.reading import page_text  # same package: full module path, never via pdf/__init__
 
 
@@ -25,6 +26,7 @@ class DetectionRules:
     min_vector_figure_area: float  # graphic clusters must add up to this share of the page
 
 
+@with_mupdf_lock
 def detect_figure_pages(pdf_path: Path, rules: DetectionRules) -> list[FigurePage]:
     with pymupdf.open(pdf_path) as doc:
         pages: list[FigurePage] = []

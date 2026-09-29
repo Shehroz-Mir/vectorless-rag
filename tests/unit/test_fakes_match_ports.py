@@ -10,6 +10,7 @@ from tests.fakes import (
     InMemoryDocumentRepository,
     InMemoryFigureRepository,
     InMemoryFileStore,
+    RecordingLocks,
 )
 from vectorless_rag.operations import (
     AnswerAgent,
@@ -20,6 +21,7 @@ from vectorless_rag.operations import (
     PageRenderer,
     UserIndex,
     UserIndexProvider,
+    UserLocks,
 )
 
 
@@ -32,8 +34,9 @@ def test_fakes_satisfy_the_ports() -> None:
     index: UserIndex = FakeUserIndex()
     provider: UserIndexProvider = FakeUserIndexProvider()
     agent: AnswerAgent = FakeAnswerAgent("answer")
+    locks: UserLocks = RecordingLocks()
 
-    assert all(port is not None for port in (documents, figures, files, renderer, describer, index, provider, agent))
+    assert all(port is not None for port in (documents, figures, files, renderer, describer, index, provider, agent, locks))
 
 
 def test_fake_index_uniquifies_names_and_resolves_citations() -> None:

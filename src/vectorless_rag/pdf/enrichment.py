@@ -11,6 +11,7 @@ from pathlib import Path
 import pymupdf
 
 from vectorless_rag.models import FigureNote
+from vectorless_rag.pdf.mupdf_lock import with_mupdf_lock
 
 INVISIBLE = 3  # PDF text render mode 3: neither filled nor stroked
 FONT = "helv"  # a base-14 font: nothing to embed, but it covers Latin-1 only
@@ -28,6 +29,7 @@ _LATIN1_REPLACEMENTS = str.maketrans({
 })
 
 
+@with_mupdf_lock
 def write_invisible_notes(original: Path, target: Path, notes: Sequence[FigureNote]) -> None:
     """Copy `original` to `target`, writing each note invisibly inside its figure box."""
     if target.resolve() == original.resolve():

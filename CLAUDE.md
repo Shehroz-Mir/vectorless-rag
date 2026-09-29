@@ -39,6 +39,7 @@ cp .env.example .env                      # then set OPENAI_API_KEY; every setti
 python -m venv .venv && .venv/Scripts/python -m pip install -e ".[dev]"
 .venv/Scripts/pyright                     # src + tests; must report 0 errors
 .venv/Scripts/python -m pytest
+RUN_LIVE_TESTS=1 .venv/Scripts/python -m pytest tests/integration   # also runs the tests that call OpenAI (cents)
 .venv/Scripts/python -m uvicorn vectorless_rag.api.main:app --reload   # once api/ exists
 
 # Spikes (throwaway; own venv and pyright config)
@@ -81,6 +82,7 @@ var/             runtime data (DATA_ROOT): uploads, enriched PDFs, PageIndex sto
 - The enriched PDF keeps the original file name: PageIndex shows the file's base name to the agent
   and in citations.
 - Guard indexing entry points with `if __name__ == "__main__":` (PageIndex spawns processes on Windows).
+- PyMuPDF is not thread-safe: every public `pdf/` function or method is decorated with `@with_mupdf_lock`.
 - Interfaces: **Protocol** around third-party SDKs (PageIndex, OpenAI, LangChain) and anything we
   replace with a fake in tests. **ABC** only when implementations share real code or state, or we
   want runtime enforcement. Keep inheritance shallow. Use classes where there is state or

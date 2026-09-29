@@ -1,10 +1,17 @@
-"""Small generated PDFs for the pdf/ tests. Pages are A4 (595 × 842 pt)."""
+"""Small generated PDFs for the pdf/ tests, and the detection rules they use. Pages are A4 (595 × 842 pt)."""
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
 import pymupdf
+
+from vectorless_rag.pdf import DetectionRules
+
+DEFAULT_DETECTION_RULES = DetectionRules(
+    min_image_area_ratio=0.03, min_graphic_cluster_ratio=0.01, max_cluster_text_density=5.0, min_vector_figure_area=0.02,
+)
+"""The spec 10 defaults, verified on the sample PDFs by Spike D."""
 
 PageBuilder = Callable[[pymupdf.Page], None]
 

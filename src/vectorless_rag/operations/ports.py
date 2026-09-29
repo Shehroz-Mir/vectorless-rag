@@ -9,6 +9,7 @@ with functools.partial at the composition root.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Protocol
 from uuid import UUID
@@ -141,6 +142,15 @@ class UserIndex(Protocol):
 
 class UserIndexProvider(Protocol):
     def for_user(self, user_key: str) -> UserIndex: ...
+
+
+class UserLocks(Protocol):
+    """One writer per user library (spec 5.4): PageIndex's own lock does nothing on Windows."""
+
+    def for_user(self, user_key: str) -> AbstractContextManager[object]:
+        """Hold around every change to the user's PageIndex library (index, delete). Deletion also
+        removes the registry row while holding it, so ingestion can re-check the row under the lock."""
+        ...
 
 
 # ── the answering agent ──

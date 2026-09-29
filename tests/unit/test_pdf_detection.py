@@ -1,12 +1,8 @@
 from pathlib import Path
 
-from tests.sample_pdfs import build_pdf, drawing, image, table, text
+from tests.sample_pdfs import DEFAULT_DETECTION_RULES, build_pdf, drawing, image, table, text
 from vectorless_rag.models import FigureKind
-from vectorless_rag.pdf import detect_figure_pages, DetectionRules, read_page_texts
-# The spec 10 defaults.
-RULES = DetectionRules(
-    min_image_area_ratio=0.03, min_graphic_cluster_ratio=0.01, max_cluster_text_density=5.0, min_vector_figure_area=0.02,
-)
+from vectorless_rag.pdf import detect_figure_pages, read_page_texts
 
 
 def test_reads_every_page_text_in_order(tmp_path: Path) -> None:
@@ -21,7 +17,7 @@ def test_large_image_is_a_raster_figure_but_an_icon_is_not(tmp_path: Path) -> No
         [text("warning"), image((72, 100, 110, 138))],  # icon, ~0.3%
     ])
 
-    pages = detect_figure_pages(pdf, RULES)
+    pages = detect_figure_pages(pdf, DEFAULT_DETECTION_RULES)
 
     assert [(p.page, p.main_figure.kind) for p in pages] == [(1, FigureKind.RASTER)]
     x0, y0, x1, y1 = pages[0].main_figure.box
@@ -35,7 +31,7 @@ def test_line_drawing_is_a_vector_figure_but_a_table_is_not(tmp_path: Path) -> N
         [text("plain text only")],
     ])
 
-    pages = detect_figure_pages(pdf, RULES)
+    pages = detect_figure_pages(pdf, DEFAULT_DETECTION_RULES)
 
     assert [(p.page, p.main_figure.kind) for p in pages] == [(1, FigureKind.VECTOR)]
 
@@ -43,13 +39,13 @@ def test_line_drawing_is_a_vector_figure_but_a_table_is_not(tmp_path: Path) -> N
 def test_small_drawing_clusters_are_ignored(tmp_path: Path) -> None:
     pdf = build_pdf(tmp_path / "s.pdf", [[text("note"), drawing((72, 100, 100, 128))]])
 
-    assert detect_figure_pages(pdf, RULES) == []
+    assert detect_figure_pages(pdf, DEFAULT_DETECTION_RULES) == []
 
 
 def test_page_with_both_kinds_lists_every_figure(tmp_path: Path) -> None:
     pdf = build_pdf(tmp_path / "m.pdf", [[image((50, 50, 300, 250)), drawing((100, 400, 500, 800))]])
 
-    [page] = detect_figure_pages(pdf, RULES)
+    [page] = detect_figure_pages(pdf, DEFAULT_DETECTION_RULES)
 
     assert {figure.kind for figure in page.figures} == {FigureKind.RASTER, FigureKind.VECTOR}
     assert page.main_figure.kind is FigureKind.VECTOR  # the larger one
@@ -58,4 +54,4 @@ def test_page_with_both_kinds_lists_every_figure(tmp_path: Path) -> None:
 def test_image_partly_off_the_page_counts_only_its_visible_part(tmp_path: Path) -> None:
     pdf = build_pdf(tmp_path / "o.pdf", [[image((580, 800, 900, 1200))]])  # only ~15×42 pt visible
 
-    assert detect_figure_pages(pdf, RULES) == []
+    assert detect_figure_pages(pdf, DEFAULT_DETECTION_RULES) == []

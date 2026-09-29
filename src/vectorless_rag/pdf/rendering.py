@@ -6,11 +6,14 @@ from pathlib import Path
 
 import pymupdf
 
+from vectorless_rag.pdf.mupdf_lock import with_mupdf_lock
+
 
 class PyMuPdfPageRenderer:
     def __init__(self, dpi: int) -> None:
         self._dpi = dpi
 
+    @with_mupdf_lock
     def render_png(self, pdf_path: Path, pages: Sequence[int]) -> list[bytes]:
         """One PNG per requested 1-based page, in the order asked."""
         with pymupdf.open(pdf_path) as doc:

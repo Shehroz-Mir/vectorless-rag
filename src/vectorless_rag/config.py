@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     scanned_max_text_chars: NonNegativeInt = 50
     scanned_page_share: Ratio = 0.5
 
+    # Ingestion worker (spec 5.4): documents enriched and indexed at the same time.
+    ingestion_workers: PositiveInt = 2
+
     # view_pages and agent limits.
     view_pages_max_pages: PositiveInt = 3
     view_pages_max_calls: PositiveInt = 4
