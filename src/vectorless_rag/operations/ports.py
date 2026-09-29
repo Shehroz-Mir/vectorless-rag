@@ -13,10 +13,21 @@ from pathlib import Path
 from typing import Protocol
 from uuid import UUID
 
-from vectorless_rag.models.documents import Document, DocumentChanges, DocumentStatus, NewDocument
-from vectorless_rag.models.figures import FigureDescription, FigureNote, FigurePage, NewFigureDescription, PageDescription
-from vectorless_rag.models.index import IndexedDocument, ResolvedAnswer
-from vectorless_rag.models.query import ChatMessage, PageImage
+from vectorless_rag.models import (
+    ChatMessage,
+    Document,
+    DocumentChanges,
+    DocumentStatus,
+    FigureDescription,
+    FigureNote,
+    FigurePage,
+    IndexedDocument,
+    NewDocument,
+    NewFigureDescription,
+    PageDescription,
+    PageImage,
+    ResolvedAnswer,
+)
 
 # ── registry and files ──
 

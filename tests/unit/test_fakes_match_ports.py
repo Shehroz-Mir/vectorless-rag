@@ -1,16 +1,17 @@
 """pyright proves each fake satisfies its Protocol: an assignment below fails type-checking if not."""
 from pathlib import Path
 
-from tests.fakes.files import InMemoryFileStore
-from tests.fakes.registry import InMemoryDocumentRepository, InMemoryFigureRepository
-from tests.fakes.services import (
+from tests.fakes import (
     FakeAnswerAgent,
     FakeFigureDescriber,
     FakePageRenderer,
     FakeUserIndex,
     FakeUserIndexProvider,
+    InMemoryDocumentRepository,
+    InMemoryFigureRepository,
+    InMemoryFileStore,
 )
-from vectorless_rag.operations.ports import (
+from vectorless_rag.operations import (
     AnswerAgent,
     DocumentRepository,
     FigureDescriber,

@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pymupdf
 
-from vectorless_rag.models.figures import BoundingBox, DetectedFigure, FigureKind, FigurePage
-from vectorless_rag.pdf.reading import page_text
+from vectorless_rag.models import BoundingBox, DetectedFigure, FigureKind, FigurePage
+from vectorless_rag.pdf.reading import page_text  # same package: full module path, never via pdf/__init__
 
 
 @dataclass(frozen=True)

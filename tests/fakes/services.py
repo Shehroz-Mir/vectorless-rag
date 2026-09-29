@@ -6,11 +6,8 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from uuid import uuid4
 
-from vectorless_rag.models.figures import PageDescription
-from vectorless_rag.models.index import IndexCitation, IndexedDocument, ResolvedAnswer
-from vectorless_rag.models.query import ChatMessage
-from vectorless_rag.operations.errors import DocumentNotFound
-from vectorless_rag.operations.ports import PageViewer
+from vectorless_rag.models import ChatMessage, IndexCitation, IndexedDocument, PageDescription, ResolvedAnswer
+from vectorless_rag.operations import DocumentNotFound, PageViewer
 
 _CITE_TAG = re.compile(r'<cite doc="(?P<doc>[^"]+)" page="(?P<page>\d+)"\s*/>')
 

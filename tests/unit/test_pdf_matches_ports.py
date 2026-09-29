@@ -1,11 +1,14 @@
 """pyright proves the pdf/ adapters fit the ports, wired the way the composition root will wire them."""
 from functools import partial
 
-from vectorless_rag.operations.ports import DetectFigurePages, PageRenderer, ReadPageTexts, WriteInvisibleNotes
-from vectorless_rag.pdf.detection import DetectionRules, detect_figure_pages
-from vectorless_rag.pdf.enrichment import write_invisible_notes
-from vectorless_rag.pdf.reading import read_page_texts
-from vectorless_rag.pdf.rendering import PyMuPdfPageRenderer
+from vectorless_rag.operations import DetectFigurePages, PageRenderer, ReadPageTexts, WriteInvisibleNotes
+from vectorless_rag.pdf import (
+    detect_figure_pages,
+    DetectionRules,
+    PyMuPdfPageRenderer,
+    read_page_texts,
+    write_invisible_notes,
+)
 
 
 def test_pdf_adapters_satisfy_the_ports() -> None:

@@ -9,11 +9,21 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from tests.fakes.registry import InMemoryDocumentRepository, InMemoryFigureRepository
-from vectorless_rag.models.documents import DocumentChanges, DocumentStatus, NewDocument
-from vectorless_rag.models.figures import FigureKind, NewFigureDescription
-from vectorless_rag.operations.errors import DocumentNotFound, DuplicateDocument
-from vectorless_rag.operations.ports import DocumentRepository, FigureRepository
+from tests.fakes import InMemoryDocumentRepository, InMemoryFigureRepository
+from vectorless_rag.models import (
+    DocumentChanges,
+    DocumentStatus,
+    FigureKind,
+    NewDocument,
+    NewFigureDescription,
+)
+from vectorless_rag.operations import (
+    DocumentNotFound,
+    DocumentRepository,
+    DuplicateDocument,
+    FigureRepository,
+)
+
 
 DOCUMENT_REPOSITORIES: list[Callable[[], DocumentRepository]] = [InMemoryDocumentRepository]
 FIGURE_REPOSITORIES: list[Callable[[], FigureRepository]] = [InMemoryFigureRepository]

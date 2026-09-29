@@ -4,8 +4,8 @@ import pymupdf
 import pytest
 
 from tests.sample_pdfs import build_pdf, drawing, text
-from vectorless_rag.operations.ports import PageRenderer
-from vectorless_rag.pdf.rendering import PyMuPdfPageRenderer
+from vectorless_rag.operations import PageRenderer
+from vectorless_rag.pdf import PyMuPdfPageRenderer
 
 
 @pytest.fixture

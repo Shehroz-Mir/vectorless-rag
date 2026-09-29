@@ -502,6 +502,8 @@ tests/
   unit/  integration/
 ```
 
+**Package interfaces:** each package's `__init__.py` re-exports its public names (with `__all__`), and other packages import through it (`from vectorless_rag.models import Document`). Inside a package, files import each other by full module path, which avoids circular imports. The top-level `vectorless_rag/__init__.py` re-exports nothing, so importing `models` or `operations` never loads PyMuPDF, LangChain, PageIndex or SQLAlchemy (guarded by a test). This deliberately departs from the plugin's advice to keep `__init__.py` empty.
+
 **Dependency rule:** `api/`, `worker/` → `operations/` → `operations/ports.py` ← adapters (`db/`, `pdf/`, `vision/`, `indexing/`, `agent/`, `storage/`). `operations/` never imports an adapter or a third-party SDK. Only the composition roots (`api/dependencies.py`, `worker/runner.py`) create adapters and inject them. `models/` may be imported anywhere.
 
 Where the extra components sit:

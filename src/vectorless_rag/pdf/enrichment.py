@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pymupdf
 
-from vectorless_rag.models.figures import FigureNote
+from vectorless_rag.models import FigureNote
 
 INVISIBLE = 3  # PDF text render mode 3: neither filled nor stroked
 FONT = "helv"  # a base-14 font: nothing to embed, but it covers Latin-1 only

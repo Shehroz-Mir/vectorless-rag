@@ -85,7 +85,13 @@ var/             runtime data (DATA_ROOT): uploads, enriched PDFs, PageIndex sto
   replace with a fake in tests. **ABC** only when implementations share real code or state, or we
   want runtime enforcement. Keep inheritance shallow. Use classes where there is state or
   dependencies; plain functions for stateless steps.
+- Each package's `__init__.py` exposes its public interface (re-exports + `__all__`). Other packages
+  import through it (`from vectorless_rag.models import Document`); files inside a package import
+  siblings by full module path (`from vectorless_rag.pdf.reading import page_text`), never through
+  their own `__init__`. The top-level `vectorless_rag/__init__.py` re-exports nothing.
+  `tests/unit/test_package_interfaces.py` guards this.
 - Python code follows the python-clean-architecture plugin (skill `clean-architecture`), adapted as
-  in spec Section 18. Our Protocol-vs-ABC rule above overrides its Protocol-first default.
+  in spec Section 18. Our Protocol-vs-ABC rule and our `__init__.py` rule override its
+  Protocol-first default and its empty-`__init__` advice.
 - pyright must pass with 0 errors.
 - Run `/review-architecture` before a feature is considered done.

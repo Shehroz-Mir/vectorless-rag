@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from vectorless_rag.operations.users import user_key_for
+from vectorless_rag.operations import user_key_for
 
 
 def test_user_key_is_stable() -> None:

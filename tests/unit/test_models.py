@@ -4,8 +4,14 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from vectorless_rag.models.documents import DocumentChanges, DocumentStatus, NewDocument
-from vectorless_rag.models.figures import DetectedFigure, FigureKind, FigurePage
+from vectorless_rag.models import (
+    DetectedFigure,
+    DocumentChanges,
+    DocumentStatus,
+    FigureKind,
+    FigurePage,
+    NewDocument,
+)
 
 
 def test_changes_apply_only_the_fields_that_were_set() -> None:

@@ -12,8 +12,10 @@ import pytest
 from PyPDF2 import PdfReader
 
 from tests.sample_pdfs import build_pdf, drawing, text
-from vectorless_rag.models.figures import FigureNote
-from vectorless_rag.pdf.enrichment import to_latin1, write_invisible_notes
+from vectorless_rag.models import FigureNote
+from vectorless_rag.pdf import write_invisible_notes
+from vectorless_rag.pdf.enrichment import to_latin1  # internal helper
+
 
 BOX = (100.0, 150.0, 450.0, 450.0)
 NOTE = FigureNote(page=1, box=BOX, text="[FIGURE DESCRIPTION p1 fig1] Line drawing of the device. Canary: ZEBRA-7731.")

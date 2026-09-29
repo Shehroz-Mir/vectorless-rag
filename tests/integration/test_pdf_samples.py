@@ -6,13 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from vectorless_rag.models.figures import FigureKind
-from vectorless_rag.pdf.detection import DetectionRules, detect_figure_pages
-
+from vectorless_rag.models import FigureKind
+from vectorless_rag.pdf import detect_figure_pages, DetectionRules
 SAMPLES = Path(__file__).resolve().parents[2] / "Data"
 RULES = DetectionRules(
     min_image_area_ratio=0.03, min_graphic_cluster_ratio=0.01, max_cluster_text_density=5.0, min_vector_figure_area=0.02,
 )
+
 
 # Page lists from Spike D; the vector lists match the 28 illustrations labelled by eye.
 EXPECTED = {

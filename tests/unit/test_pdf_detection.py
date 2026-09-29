@@ -1,10 +1,8 @@
 from pathlib import Path
 
 from tests.sample_pdfs import build_pdf, drawing, image, table, text
-from vectorless_rag.models.figures import FigureKind
-from vectorless_rag.pdf.detection import DetectionRules, detect_figure_pages
-from vectorless_rag.pdf.reading import read_page_texts
-
+from vectorless_rag.models import FigureKind
+from vectorless_rag.pdf import detect_figure_pages, DetectionRules, read_page_texts
 # The spec 10 defaults.
 RULES = DetectionRules(
     min_image_area_ratio=0.03, min_graphic_cluster_ratio=0.01, max_cluster_text_density=5.0, min_vector_figure_area=0.02,

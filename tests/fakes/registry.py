@@ -5,9 +5,15 @@ from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from vectorless_rag.models.documents import Document, DocumentChanges, DocumentStatus, NewDocument
-from vectorless_rag.models.figures import FigureDescription, NewFigureDescription
-from vectorless_rag.operations.errors import DocumentNotFound, DuplicateDocument
+from vectorless_rag.models import (
+    Document,
+    DocumentChanges,
+    DocumentStatus,
+    FigureDescription,
+    NewDocument,
+    NewFigureDescription,
+)
+from vectorless_rag.operations import DocumentNotFound, DuplicateDocument
 
 
 def _now() -> datetime:
