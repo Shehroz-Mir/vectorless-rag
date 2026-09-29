@@ -56,6 +56,24 @@ def test_missing_api_key_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
         load_settings(env_file=None)
 
 
+def test_empty_api_key_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+
+    with pytest.raises(ValidationError, match="openai_api_key"):
+        load_settings(env_file=None)
+
+
+def test_env_example_lists_every_setting_with_its_default() -> None:
+    example = Path(__file__).resolve().parents[2] / ".env.example"
+    listed = {line.split("=", 1)[0].lower() for line in example.read_text(encoding="utf-8").splitlines() if "=" in line and not line.startswith("#")}
+
+    from_example = load_settings(env_file=example)  # the real key still comes from the environment
+    defaults = load_settings(env_file=None)
+
+    assert listed == set(defaults.model_dump())
+    assert from_example == defaults
+
+
 @pytest.mark.parametrize("name, value", [("MIN_IMAGE_AREA_RATIO", "1.5"), ("RENDER_DPI", "10"), ("CHAT_MODEL", "")])
 def test_invalid_values_are_rejected(monkeypatch: pytest.MonkeyPatch, name: str, value: str) -> None:
     monkeypatch.setenv(name, value)

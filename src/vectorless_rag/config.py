@@ -19,7 +19,7 @@ ModelName = Annotated[str, Field(min_length=1)]
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file_encoding="utf-8", extra="ignore", frozen=True)
 
-    openai_api_key: SecretStr
+    openai_api_key: Annotated[SecretStr, Field(min_length=1)]
 
     # Models (spec 10): tree building, ingestion-time figure descriptions, the answering agent.
     index_model: ModelName = "gpt-5.6-luna"

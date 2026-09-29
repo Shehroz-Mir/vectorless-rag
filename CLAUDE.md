@@ -35,6 +35,7 @@ Postgres prod) · pydantic / pydantic-settings · pytest · pyright. Models: `gp
 
 ```bash
 # Service
+cp .env.example .env                      # then set OPENAI_API_KEY; every setting is listed there
 python -m venv .venv && .venv/Scripts/python -m pip install -e ".[dev]"
 .venv/Scripts/pyright                     # src + tests; must report 0 errors
 .venv/Scripts/python -m pytest
