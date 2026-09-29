@@ -4,3 +4,6 @@ spikes/out/
 var/
 __pycache__/
 *.pyc
+.venv/
+.pytest_cache/
+*.egg-info/

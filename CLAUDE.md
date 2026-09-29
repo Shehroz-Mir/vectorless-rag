@@ -34,20 +34,18 @@ Postgres prod) · pydantic / pydantic-settings · pytest · pyright. Models: `gp
 ## Commands (Windows; Git Bash paths)
 
 ```bash
-# Spikes (exist now; throwaway)
-python -m venv spikes/.venv
-spikes/.venv/Scripts/python -m pip install -r spikes/requirements.txt
-cd spikes && .venv/Scripts/python spike_a_invisible_text.py --no-index   # free checks, no API cost
-pyright                                   # from repo root; must report 0 errors
-
-# Service (planned; not built yet)
+# Service
 python -m venv .venv && .venv/Scripts/python -m pip install -e ".[dev]"
-.venv/Scripts/python -m uvicorn vectorless_rag.api.main:app --reload
+.venv/Scripts/pyright                     # src + tests; must report 0 errors
 .venv/Scripts/python -m pytest
+.venv/Scripts/python -m uvicorn vectorless_rag.api.main:app --reload   # once api/ exists
+
+# Spikes (throwaway; own venv and pyright config)
+python -m venv spikes/.venv && spikes/.venv/Scripts/python -m pip install -r spikes/requirements.txt
+.venv/Scripts/pyright -p spikes
 ```
 
-`pyrightconfig.json` currently points at `spikes/.venv`. When the service venv exists, point it at
-`.venv` and include `src` and `tests`. Restart Claude Code after changing it so the pyright LSP reloads.
+Restart Claude Code after changing `pyrightconfig.json` so the pyright LSP reloads.
 
 ## Layout
 
@@ -55,18 +53,21 @@ python -m venv .venv && .venv/Scripts/python -m pip install -e ".[dev]"
 docs/            spec and spike findings
 Data/            sample PDFs: read-only test input, never write here
 spikes/          throwaway experiments (own venv); outputs in spikes/out/
-src/vectorless_rag/   (planned; spec Section 18)
+src/vectorless_rag/   (spec Section 18; filled in step by step)
   api/ worker/        entry points and composition roots
   operations/         use cases + ports.py (Protocols) + errors.py
   db/ pdf/ vision/ pageindex/ agent/ storage/   adapters behind the ports
   models/ config.py
-tests/  fakes/ unit/ integration/
+tests/  fakes/ (in-memory ports) unit/ integration/
 var/             runtime data (DATA_ROOT): uploads, enriched PDFs, PageIndex storage, SQLite
 ```
 
 ## Conventions
 
-- Keys only from the environment / `.env`. Never hard-code, print or log them.
+- Keys only from the environment / `.env`. Never hard-code, print or log them. Only the composition
+  roots call `load_settings()`; adapters receive values (including the API key) as arguments.
+- `operations/` imports only `ports.py`, `models/` and its own modules — never an adapter or SDK.
+  Each new adapter must pass the same contract tests as its fake (see `tests/unit/test_repository_contracts.py`).
 - No vector DB, no embeddings, no chunking.
 - PageIndex agent tools stay read-only.
 - One PageIndex client and `storage_path` per user (`var/users/{user_key}/pageindex`); never share

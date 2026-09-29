@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vectorless-rag"
+version = "0.1.0"
+description = "Multi-user vectorless RAG over PDFs: PageIndex (local) + LangChain + OpenAI."
+requires-python = ">=3.13"
+# Versions verified by the spikes or checked on PyPI (spec Section 17).
+dependencies = [
+    "pageindex==0.2.20",
+    "langchain==1.4.3",
+    "langchain-core==1.6.5",
+    "langchain-openai==1.6.6",
+    "openai==2.54.0",  # 3.x conflicts with pageindex's dependencies
+    "pymupdf==1.28.2",
+    "fastapi==0.141.1",
+    "uvicorn==0.54.0",
+    "sqlalchemy==2.1.1",
+    "pydantic==2.13.5",
+    "pydantic-settings==2.15.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+    "pyright==1.1.414",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]  # lets tests import the shared fakes as `tests.fakes`

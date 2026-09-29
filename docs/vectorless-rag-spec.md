@@ -231,7 +231,7 @@ Page numbers are identical in both, so citations work for either.
 | file_sha256 | string | dedup per user (hash of original) |
 | pageindex_doc_id | string, nullable | set after indexing (`pi-…`) |
 | pageindex_name | string, nullable | stored name (PageIndex adds `_1`… on name clashes); what the agent and `view_pages` use |
-| page_count | int, nullable | |
+| page_count | int | set at upload (page-limit check) |
 | figure_page_count | int, nullable | pages detected with figures |
 | status | enum | `queued`, `enriching`, `indexing`, `completed`, `failed` |
 | error | text, nullable | |
@@ -519,7 +519,10 @@ Where the extra components sit:
 | `PageRenderer` | Protocol | wraps PyMuPDF; faked in tests | `pdf/rendering.py` |
 | `AnswerAgent` | Protocol | wraps LangChain; faked in tests | `agent/builder.py` |
 | `SqlRepository` base | ABC | the two SQL repositories share session and commit code | `db/base.py` |
-| `detect_figure_pages`, `write_invisible_descriptions`, `parse_page_spec`, citation mapping | plain functions | stateless steps | `pdf/`, `operations/` |
+| `ReadPageTexts`, `DetectFigurePages`, `WriteInvisibleNotes` (Callable aliases in `ports.py`); page-spec parsing, citation mapping | plain functions | stateless steps; thresholds bound with `functools.partial` | `pdf/`, `operations/` |
+| `PageViewer` (`(doc_name, pages) -> list[PageImage]`) | Callable alias | built per request by `operations/query.py`, bound to the user | `operations/` |
 | Image-trimming middleware | LangChain `@wrap_model_call` (or one-level `AgentMiddleware` subclass) | framework hook | `agent/middleware.py` |
 
-Domain exceptions (in `operations/errors.py`, mapped to HTTP in `api/`): `DocumentNotFound` (404, also for other users' documents), `DocumentNotReady` (409), `UnsupportedFile` (415), `FileTooLarge` (413), `ScannedDocument` (sets `failed`).
+Domain exceptions (in `operations/errors.py`, mapped to HTTP in `api/`): `DocumentNotFound` (404, also for other users' documents), `DocumentNotReady` (409), `UnsupportedFile` (415), `FileTooLarge` (413), `TooManyPages` (413), `ScannedDocument` (sets `failed`), `DuplicateDocument` (repository-level; the upload returns the existing record), `ViewPagesRejected` (message returned to the agent). All derive from `VectorlessRagError`.
+
+User keys: `operations/users.py` derives `user_key = uuid5(fixed namespace, user_id)`; every folder under `DATA_ROOT` uses it.

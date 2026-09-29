@@ -1,6 +1,6 @@
 {
-  "include": ["src", "tests"],
-  "exclude": ["**/__pycache__", ".venv", "spikes", "var"],
+  "include": ["."],
+  "exclude": [".venv", "out", "**/__pycache__"],
   "venvPath": ".",
   "venv": ".venv",
   "pythonVersion": "3.13",
