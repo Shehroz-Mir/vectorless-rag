@@ -1,0 +1,6 @@
+.env
+spikes/.venv/
+spikes/out/
+var/
+__pycache__/
+*.pyc

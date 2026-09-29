@@ -1,0 +1,8 @@
+{
+  "include": ["spikes"],
+  "exclude": ["spikes/.venv", "spikes/out", "**/__pycache__"],
+  "venvPath": "spikes",
+  "venv": ".venv",
+  "pythonVersion": "3.13",
+  "typeCheckingMode": "standard"
+}
