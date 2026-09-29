@@ -56,7 +56,7 @@ spikes/          throwaway experiments (own venv); outputs in spikes/out/
 src/vectorless_rag/   (spec Section 18; filled in step by step)
   api/ worker/        entry points and composition roots
   operations/         use cases + ports.py (Protocols) + errors.py
-  db/ pdf/ vision/ pageindex/ agent/ storage/   adapters behind the ports
+  db/ pdf/ vision/ indexing/ agent/ storage/   adapters behind the ports
   models/ config.py
 tests/  fakes/ (in-memory ports) unit/ integration/
 var/             runtime data (DATA_ROOT): uploads, enriched PDFs, PageIndex storage, SQLite

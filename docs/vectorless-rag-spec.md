@@ -490,7 +490,7 @@ src/vectorless_rag/
   db/              SQLAlchemy registry: implements the repository Protocols
   pdf/             PyMuPDF: detection.py, enrichment.py (invisible text), rendering.py
   vision/          OpenAI figure describer
-  pageindex/       PageIndexClientPool, per-user index adapter, tool wrapping
+  indexing/        PageIndexClientPool, per-user index adapter, tool wrapping
   agent/           LangChain agent builder, view_pages tool, image-trimming middleware, prompts
   storage/         file layout under DATA_ROOT
 tests/
@@ -498,12 +498,12 @@ tests/
   unit/  integration/
 ```
 
-**Dependency rule:** `api/`, `worker/` → `operations/` → `operations/ports.py` ← adapters (`db/`, `pdf/`, `vision/`, `pageindex/`, `agent/`, `storage/`). `operations/` never imports an adapter or a third-party SDK. Only the composition roots (`api/dependencies.py`, `worker/runner.py`) create adapters and inject them. `models/` may be imported anywhere.
+**Dependency rule:** `api/`, `worker/` → `operations/` → `operations/ports.py` ← adapters (`db/`, `pdf/`, `vision/`, `indexing/`, `agent/`, `storage/`). `operations/` never imports an adapter or a third-party SDK. Only the composition roots (`api/dependencies.py`, `worker/runner.py`) create adapters and inject them. `models/` may be imported anywhere.
 
 Where the extra components sit:
 - **Ingestion worker:** a second entry point next to the API. It calls `operations/ingestion.py`, which runs steps a–e through ports.
 - **Figure enrichment:** the steps are stateless, so they are plain functions in `pdf/`, injected as `Callable` type aliases. The vision call is the `FigureDescriber` port.
-- **PageIndex adapter:** `pageindex/` implements `UserIndex` and `UserIndexProvider`.
+- **PageIndex adapter:** `indexing/` implements `UserIndex` and `UserIndexProvider`.
 - **LangChain agent:** `agent/` implements `AnswerAgent`. `view_pages` is built there, bound to the user, and calls a small `operations/query.py` function for the ownership and name lookup.
 
 **Interfaces (our rule: Protocol for third-party SDK wrappers and anything faked in tests; ABC when implementations share real code or state, or runtime enforcement is wanted; shallow inheritance; plain functions for stateless steps):**
@@ -513,8 +513,8 @@ Where the extra components sit:
 | `DocumentRepository` | Protocol | faked in tests | `db/documents.py` |
 | `FigureRepository` | Protocol | faked in tests | `db/figures.py` |
 | `FileStore` | Protocol | faked in tests | `storage/files.py` |
-| `UserIndex` (submit, delete, document context, tools, citations for one user) | Protocol | wraps the PageIndex SDK | `pageindex/user_index.py` |
-| `UserIndexProvider` (`for_user(user_key) -> UserIndex`) | Protocol | wraps the SDK client pool | `pageindex/client_pool.py` |
+| `UserIndex` (submit, delete, document context, tools, citations for one user) | Protocol | wraps the PageIndex SDK | `indexing/user_index.py` |
+| `UserIndexProvider` (`for_user(user_key) -> UserIndex`) | Protocol | wraps the SDK client pool | `indexing/client_pool.py` |
 | `FigureDescriber` | Protocol | wraps the OpenAI SDK | `vision/openai_describer.py` |
 | `PageRenderer` | Protocol | wraps PyMuPDF; faked in tests | `pdf/rendering.py` |
 | `AnswerAgent` | Protocol | wraps LangChain; faked in tests | `agent/builder.py` |

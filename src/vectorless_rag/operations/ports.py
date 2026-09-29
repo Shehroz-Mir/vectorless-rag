@@ -1,6 +1,6 @@
 """Contracts between the use cases and the outside world (spec Section 18).
 
-`operations/` depends only on these. Adapters in `db/`, `storage/`, `pdf/`, `vision/`, `pageindex/`
+`operations/` depends only on these. Adapters in `db/`, `storage/`, `pdf/`, `vision/`, `indexing/`
 and `agent/` implement them, and the composition roots (`api/`, `worker/`) wire them together.
 All are Protocols under our rule: each wraps a third-party SDK or is replaced by a fake in tests.
 Stateless PDF steps are plain functions, typed here as Callable aliases; their thresholds are bound
