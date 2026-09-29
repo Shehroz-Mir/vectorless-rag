@@ -1,42 +1,46 @@
 """Behaviour every DocumentRepository / FigureRepository must have.
 
-Runs against the in-memory fakes now; step 3 adds the SQL repositories to the factory lists, so the
-fakes used by the operation tests and the real repositories are held to the same contract.
+Each test runs against the in-memory fakes and against the SQL repositories on SQLite, so the fakes
+the operation tests rely on and the real registry are held to the same contract.
 """
-from collections.abc import Callable
 from pathlib import Path
 from uuid import UUID, uuid4
 
 import pytest
 
-from tests.fakes import InMemoryDocumentRepository, InMemoryFigureRepository
-from vectorless_rag.models import (
-    DocumentChanges,
-    DocumentStatus,
-    FigureKind,
-    NewDocument,
-    NewFigureDescription,
+from tests.fakes import InMemoryDocumentRepository, InMemoryFigureRepository, TickingClock
+from vectorless_rag.db import (
+    SqlDocumentRepository,
+    SqlFigureRepository,
+    create_database_engine,
+    create_schema,
+    create_session_factory,
 )
-from vectorless_rag.operations import (
-    DocumentNotFound,
-    DocumentRepository,
-    DuplicateDocument,
-    FigureRepository,
-)
+from vectorless_rag.models import DocumentChanges, DocumentStatus, FigureKind, NewDocument, NewFigureDescription
+from vectorless_rag.operations import DocumentNotFound, DocumentRepository, DuplicateDocument, FigureRepository
+
+Registry = tuple[DocumentRepository, FigureRepository]
 
 
-DOCUMENT_REPOSITORIES: list[Callable[[], DocumentRepository]] = [InMemoryDocumentRepository]
-FIGURE_REPOSITORIES: list[Callable[[], FigureRepository]] = [InMemoryFigureRepository]
+@pytest.fixture(params=["in-memory", "sqlite"])
+def registry(request: pytest.FixtureRequest, tmp_path: Path) -> Registry:
+    clock = TickingClock()
+    if request.param == "in-memory":
+        return InMemoryDocumentRepository(clock), InMemoryFigureRepository(clock)
+    engine = create_database_engine(f"sqlite:///{tmp_path / 'registry.db'}")
+    create_schema(engine)
+    sessions = create_session_factory(engine)
+    return SqlDocumentRepository(sessions, clock), SqlFigureRepository(sessions, clock)
 
 
-@pytest.fixture(params=DOCUMENT_REPOSITORIES)
-def documents(request: pytest.FixtureRequest) -> DocumentRepository:
-    return request.param()
+@pytest.fixture
+def documents(registry: Registry) -> DocumentRepository:
+    return registry[0]
 
 
-@pytest.fixture(params=FIGURE_REPOSITORIES)
-def figures(request: pytest.FixtureRequest) -> FigureRepository:
-    return request.param()
+@pytest.fixture
+def figures(registry: Registry) -> FigureRepository:
+    return registry[1]
 
 
 def new_document(user_id: str = "alice", sha: str = "a", filename: str = "manual.pdf") -> NewDocument:
@@ -77,7 +81,19 @@ def test_update_applies_only_set_fields_and_can_clear_errors(documents: Document
 
     assert (failed.status, failed.error) == (DocumentStatus.FAILED, "boom")
     assert (retried.status, retried.error, retried.filename) == (DocumentStatus.QUEUED, None, "manual.pdf")
-    assert retried.updated_at >= stored.updated_at
+    assert retried.updated_at > stored.updated_at
+
+
+def test_paths_and_index_results_round_trip(documents: DocumentRepository) -> None:
+    stored = documents.add(new_document())
+
+    updated = documents.update(stored.id, DocumentChanges(
+        enriched_path=Path("var/enriched/manual.pdf"), figure_page_count=7,
+        pageindex_doc_id="pi-1", pageindex_name="manual.pdf",
+    ))
+
+    assert updated == documents.get_for_user("alice", stored.id)
+    assert (updated.enriched_path, updated.figure_page_count) == (Path("var/enriched/manual.pdf"), 7)
 
 
 def test_pageindex_lookups_are_scoped_to_the_user(documents: DocumentRepository) -> None:
@@ -121,8 +137,11 @@ def figure(document_id: UUID, page: int, index: int = 1) -> NewFigureDescription
     )
 
 
-def test_figures_are_listed_in_page_order_and_deleted_per_document(figures: FigureRepository) -> None:
-    doc_a, doc_b = uuid4(), uuid4()
+def test_figures_are_listed_in_page_order_and_deleted_per_document(
+    documents: DocumentRepository, figures: FigureRepository,
+) -> None:
+    doc_a = documents.add(new_document(sha="a")).id
+    doc_b = documents.add(new_document(sha="b")).id
     figures.add_many([figure(doc_a, 14), figure(doc_a, 3, 2), figure(doc_a, 3, 1), figure(doc_b, 1)])
 
     assert [(f.page, f.figure_index) for f in figures.list_for_document(doc_a)] == [(3, 1), (3, 2), (14, 1)]

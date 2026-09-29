@@ -21,13 +21,14 @@ def _now() -> datetime:
 
 
 class InMemoryDocumentRepository:
-    def __init__(self) -> None:
+    def __init__(self, clock: Callable[[], datetime] = _now) -> None:
         self.rows: dict[UUID, Document] = {}  # insertion order = creation order
+        self._clock = clock
 
     def add(self, document: NewDocument) -> Document:
         if self.find_by_hash(document.user_id, document.file_sha256) is not None:
             raise DuplicateDocument(f"{document.user_id} already has {document.file_sha256}")
-        now = _now()
+        now = self._clock()
         stored = Document(**document.model_dump(), status=DocumentStatus.QUEUED, created_at=now, updated_at=now)
         self.rows[stored.id] = stored
         return stored
@@ -55,7 +56,7 @@ class InMemoryDocumentRepository:
         current = self.rows.get(document_id)
         if current is None:
             raise DocumentNotFound(str(document_id))
-        updated = current.model_copy(update={**changes.as_update(), "updated_at": _now()})
+        updated = current.model_copy(update={**changes.as_update(), "updated_at": self._clock()})
         self.rows[document_id] = updated
         return updated
 
@@ -68,11 +69,12 @@ class InMemoryDocumentRepository:
 
 
 class InMemoryFigureRepository:
-    def __init__(self) -> None:
+    def __init__(self, clock: Callable[[], datetime] = _now) -> None:
         self.rows: list[FigureDescription] = []
+        self._clock = clock
 
     def add_many(self, figures: Sequence[NewFigureDescription]) -> list[FigureDescription]:
-        now = _now()
+        now = self._clock()
         stored = [FigureDescription(**figure.model_dump(), id=uuid4(), created_at=now) for figure in figures]
         self.rows.extend(stored)
         return stored
