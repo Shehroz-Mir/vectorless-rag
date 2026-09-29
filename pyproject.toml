@@ -34,3 +34,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]  # lets tests import the shared fakes as `tests.fakes`
+filterwarnings = [
+    # PageIndex depends on PyPDF2; the tests use it to check what PageIndex will read.
+    "ignore:PyPDF2 is deprecated:DeprecationWarning",
+]
