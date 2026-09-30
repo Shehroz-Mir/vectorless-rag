@@ -180,6 +180,29 @@ pages; `view_pages` lets sol read exact values. Raise to sol if eval shows misse
 - Per query: each 170-DPI page image ≈ 3.0–3.2k input tokens (≈ $0.013 per model call at sol's
   uncached price) for every model call it stays in context — hence the trimming.
 
+## Step 5 checks — PageIndex adapter (2026-09-30)
+
+**Ran:** the opt-in live tests `tests/integration/test_live_indexing.py` and `test_live_pipeline.py`
+(two pages cut from TDI-110 each; about a cent in all), with `OPENAI_API_KEY` removed from the process
+environment.
+
+**Result:**
+- The key reaches PageIndex through `index={"backend": {"api_key": ...}}` (LiteLLM connection params,
+  set per indexing call in the indexing thread); indexing works with no key in `os.environ`.
+- **Leak found:** `pageindex/utils.py` runs `load_dotenv(find_dotenv(usecwd=True))` on import, and
+  LiteLLM runs `load_dotenv()` on import unless `LITELLM_MODE=PRODUCTION`. Either copies the project
+  `.env` into `os.environ`. python-dotenv 1.2.3 honours `PYTHON_DOTENV_DISABLED=1` in `load_dotenv()`
+  only; `dotenv_values()` (used by pydantic-settings) still reads the file.
+- Upload to indexed with every real part: both figure pages (p13 photo, p14 drawing) were detected,
+  described by luna, and their `[FIGURE DESCRIPTION pN fig1]` notes came back from `get_page_content`.
+- Stored name = our cleaned file name (spaces kept). Deleting a missing `doc_id` raises
+  `PageIndexAPIError("... Document not found.")`; the adapter treats it as already gone.
+- Isolation re-checked through the adapter: user B's browse is empty, B's `get_page_content` on A's
+  name is an error, B's citations for A's name have `doc_id: None`, B's `document_context` raises.
+
+**Conclusion:** keep `PYTHON_DOTENV_DISABLED=1` in `indexing/__init__.py`; an offline test in a fresh
+interpreter guards it.
+
 ## Not tested (still open)
 
 - Q8 (history vs `document_context()` order): not tested. PageIndex's own chat lanes put the context

@@ -13,6 +13,8 @@ import unicodedata
 from pathlib import Path, PureWindowsPath
 from uuid import UUID
 
+from vectorless_rag.operations import checked_user_key
+
 MAX_NAME_LENGTH = 150
 DEFAULT_NAME = "document.pdf"
 _UNSAFE_CHARS = re.compile(r"[^\w.\- ()]+")
@@ -53,9 +55,4 @@ class LocalFileStore:
             shutil.rmtree(folder)
 
     def _document_dir(self, user_key: str, document_id: UUID) -> Path:
-        # User keys come from user_key_for(); anything else must not become a folder name.
-        try:
-            UUID(user_key)
-        except ValueError:
-            raise ValueError(f"not a user key: {user_key!r}") from None
-        return self._root / "users" / user_key / "documents" / str(document_id)
+        return self._root / "users" / checked_user_key(user_key) / "documents" / str(document_id)

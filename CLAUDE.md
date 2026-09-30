@@ -68,6 +68,8 @@ var/             runtime data (DATA_ROOT): uploads, enriched PDFs, PageIndex sto
 
 - Keys only from the environment / `.env`. Never hard-code, print or log them. Only the composition
   roots call `load_settings()`; adapters receive values (including the API key) as arguments.
+  PageIndex and LiteLLM would copy `.env` into `os.environ` on import; `indexing/__init__.py` sets
+  `PYTHON_DOTENV_DISABLED=1` to stop that. Keep it (guarded by `tests/unit/test_indexing.py`).
 - `operations/` imports only `ports.py`, `models/` and its own modules — never an adapter or SDK.
   Each new adapter must pass the same contract tests as its fake (see `tests/unit/test_repository_contracts.py`).
 - No vector DB, no embeddings, no chunking.

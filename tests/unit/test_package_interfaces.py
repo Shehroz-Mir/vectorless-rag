@@ -10,7 +10,7 @@ import vectorless_rag
 
 PACKAGES = [
     "vectorless_rag.models", "vectorless_rag.operations", "vectorless_rag.pdf", "vectorless_rag.db",
-    "vectorless_rag.storage", "vectorless_rag.vision", "vectorless_rag.worker",
+    "vectorless_rag.storage", "vectorless_rag.vision", "vectorless_rag.worker", "vectorless_rag.indexing",
 ]
 ADAPTER_LIBRARIES = ["pymupdf", "langchain", "langchain_openai", "pageindex", "litellm", "openai", "sqlalchemy"]
 

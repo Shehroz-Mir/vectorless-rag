@@ -175,9 +175,12 @@ Page numbers are identical in both, so citations work for either.
       "model": INDEX_MODEL,
       "storage_path": f"{DATA_ROOT}/users/{user_key}/pageindex",
       "summary_concurrency": INDEX_SUMMARY_CONCURRENCY,
+      "backend": {"api_key": OPENAI_API_KEY},   # LiteLLM connection params for the indexing calls
   })
   ```
 - No `chat=` argument; LangChain's model does the answering.
+- The key goes in through `backend`, never through `os.environ`. PageIndex (`pageindex/utils.py`) and LiteLLM both call python-dotenv's `load_dotenv()` on import, which would copy the working directory's `.env` into `os.environ`. `indexing/` sets `PYTHON_DOTENV_DISABLED=1` before PageIndex loads; our settings read `.env` with `dotenv_values()`, which that switch does not affect (verified 2026-09-30).
+- PageIndex's own file-name sanitising leaves our stored names (`storage.safe_filename`) unchanged, so the stored name is the upload's cleaned name.
 - Directories use internal keys only, never user-supplied strings. Proposal: `user_key = uuid5(SERVICE_NAMESPACE, user_id)`, which is stable and needs no extra table.
 - Tools and `document_context()` are bound to the client's `storage_path`: user B's client cannot list, read, target or cite user A's documents (verified).
 
@@ -393,7 +396,7 @@ Answer quality depends on the chat model's reasoning; don't silently downgrade `
 
 ## 13. Testing and evaluation
 - **Unit** (in-memory fakes of the Section 18 Protocols; no database, no network): figure detection (raster + vector cluster rule, on tiny generated PDFs), invisible-text writing (render unchanged, text extractable, marker on its own line), tool wrapping, citation parsing and mapping (drop unknown `doc_id`), ownership checks, dedup, status transitions.
-- **Enrichment check:** after indexing an enriched PDF, `get_page_content()` for a figure page contains the `[FIGURE DESCRIPTION ...]` text. The tree summary for that section usually mentions the figure (not guaranteed, 9.2).
+- **Enrichment check:** after indexing an enriched PDF, `get_page_content()` for a figure page contains the `[FIGURE DESCRIPTION ...]` text. The tree summary for that section usually mentions the figure (not guaranteed, 9.2). Automated as the opt-in live test `tests/integration/test_live_pipeline.py` (upload to indexed with every real part).
 - **Integration:** index a sample PDF, ask a known question, assert the cited page (spike: TDI-110 shut-off temperature → 60 °C / 140 °F, page 27).
 - **Image delivery check (automated, required):** ask a figure-only question whose answer is **not** in the figure description or text layer (spike: I-Series p30, "how many calibration points are Great, where is No data?" → 3, top centre). Also run a control where the tool returns no image and assert the agent says it cannot see it.
 - **Isolation test:** user A cannot query or discover user B's documents, including via `view_pages` and citations.
@@ -502,8 +505,8 @@ src/vectorless_rag/
   db/              SQLAlchemy registry: implements the repository Protocols
   pdf/             PyMuPDF: detection.py, enrichment.py (invisible text), rendering.py
   vision/          OpenAI figure describer
-  indexing/        PageIndexClientPool, per-user index adapter, tool wrapping
-  agent/           LangChain agent builder, view_pages tool, image-trimming middleware, prompts
+  indexing/        PageIndexClientPool, per-user index adapter (tools handed over as plain functions)
+  agent/           LangChain agent builder, tool wrapping (StructuredTool), view_pages tool, image-trimming middleware, prompts
   storage/         file layout under DATA_ROOT
 tests/
   fakes/           in-memory implementations of the Protocols

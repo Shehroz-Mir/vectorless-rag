@@ -27,6 +27,16 @@ def build_pdf(path: Path, pages: Sequence[Sequence[PageBuilder]]) -> Path:
     return path
 
 
+def cut_pages(source: Path, first: int, last: int, target: Path) -> Path:
+    """A copy of pages first..last (1-based) of `source`; the live tests keep LLM costs low with it.
+    `source` (e.g. a sample in Data/) is only read."""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with pymupdf.open(source) as original, pymupdf.open() as cut:
+        cut.insert_pdf(original, from_page=first - 1, to_page=last - 1)
+        cut.save(target)
+    return target
+
+
 def text(content: str, y: float = 72) -> PageBuilder:
     def build(page: pymupdf.Page) -> None:
         page.insert_text((72, y), content, fontsize=11)

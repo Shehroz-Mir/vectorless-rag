@@ -37,4 +37,6 @@ pythonpath = ["."]  # lets tests import the shared fakes as `tests.fakes`
 filterwarnings = [
     # PageIndex depends on PyPDF2; the tests use it to check what PageIndex will read.
     "ignore:PyPDF2 is deprecated:DeprecationWarning",
+    # LiteLLM (loaded by PageIndex) declares ReadOnly TypedDict items; pydantic notes it on import.
+    "ignore:Items? .* using the `ReadOnly` qualifier:UserWarning",
 ]

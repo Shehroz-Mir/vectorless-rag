@@ -26,7 +26,7 @@ from vectorless_rag.operations.ports import (
     UserLocks,
     WriteInvisibleNotes,
 )
-from vectorless_rag.operations.users import user_key_for
+from vectorless_rag.operations.users import checked_user_key, user_key_for
 
 __all__ = [
     "AnswerAgent",
@@ -53,6 +53,7 @@ __all__ = [
     "VectorlessRagError",
     "ViewPagesRejected",
     "WriteInvisibleNotes",
+    "checked_user_key",
     "requeue_interrupted",
     "user_key_for",
 ]
