@@ -203,6 +203,22 @@ environment.
 **Conclusion:** keep `PYTHON_DOTENV_DISABLED=1` in `indexing/__init__.py`; an offline test in a fresh
 interpreter guards it.
 
+## Step 6 checks — query side (2026-09-30)
+
+**Ran:** `tests/integration/test_live_image_delivery.py`: I-Series pp. 29-31 indexed as they are (no
+figure descriptions), asked through `QuestionAnswering` with the real `gpt-5.6-sol` agent; a control run
+renders every page blank. About 10-20 cents per run.
+
+**Result:**
+- Real image: "There are **3** calibration points rated 'Great.' The 'No data' point is at the
+  **top center** of the screen. [1]", cited to page 2 (the cut's page 2 = p30). Correct.
+- Blank image: "The page 2 image rendered blank, so I can't reliably count the 'Great' points or locate
+  the 'No data' point. I don't want to guess." No citation. The system prompt's "never guess" works.
+- The model writes curly apostrophes (U+2019); text checks normalise them first.
+- LangChain docs (via MCP): `ToolCallLimitMiddleware` `exit_behavior` is `continue` (default), `error`
+  or `end`; `ModelCallLimitMiddleware` is `end` (adds a "limits exceeded" AI message) or `error`.
+  `GenericFakeChatModel` scripts tool calls for unit tests; it needs a no-op `bind_tools` for `create_agent`.
+
 ## Not tested (still open)
 
 - Q8 (history vs `document_context()` order): not tested. PageIndex's own chat lanes put the context

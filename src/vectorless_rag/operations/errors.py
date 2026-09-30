@@ -35,3 +35,7 @@ class ScannedDocument(VectorlessRagError):
 
 class ViewPagesRejected(VectorlessRagError):
     """view_pages cannot show what the agent asked for; the message goes back to the agent."""
+
+
+class AnswerIncomplete(VectorlessRagError):
+    """The agent reached its step limit or deadline before it answered (AGENT_MAX_STEPS, AGENT_TIMEOUT_S)."""

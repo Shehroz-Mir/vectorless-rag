@@ -202,8 +202,10 @@ Page numbers are identical in both, so citations work for either.
   2. Prior chat history (if any)
   3. The new question
 - With no documents selected, the agent searches the user's own library (safe because it is per-user).
-- **Limits (middleware):** `ModelCallLimitMiddleware(run_limit=...)`, `ToolCallLimitMiddleware(run_limit=AGENT_MAX_STEPS)` for all tools, `ToolCallLimitMiddleware(tool_name="view_pages", run_limit=VIEW_PAGES_MAX_CALLS)`, and the image trimmer (5.7).
-- Agent built per request; client cached.
+- **Limits (middleware):** `ToolCallLimitMiddleware(run_limit=AGENT_MAX_STEPS)` for all tools and `ToolCallLimitMiddleware(tool_name="view_pages", run_limit=VIEW_PAGES_MAX_CALLS)`, both with the default `exit_behavior="continue"`: a blocked call gets an error result and the model answers with what it has. `ModelCallLimitMiddleware(run_limit=AGENT_MAX_STEPS + 2, exit_behavior="error")` is the backstop (`"end"` would return LangChain's "limits exceeded" text as the answer). Plus the image trimmer (5.7).
+- **Timeout:** every model call has `ChatOpenAI(timeout=AGENT_TIMEOUT_S, max_retries=2)`, and a `before_model` middleware ends the run once `AGENT_TIMEOUT_S` has passed, so a question can overrun by at most one call. The SDK also retries a timed-out call, so a call that keeps hanging can hold a question for up to 3 x `AGENT_TIMEOUT_S`; its final timeout becomes `AnswerIncomplete`.
+- The step limit, the deadline, or a last message that is not a text answer raise `AnswerIncomplete` (18).
+- Agent built per request; client and chat model cached.
 
 ### 5.7 `view_pages` tool
 **Decision (locked):** the main agent looks at the images itself. No separate vision call.
@@ -216,7 +218,7 @@ Page numbers are identical in both, so citations work for either.
   - Used: images as image blocks inside the tool result, via the Responses API. Verified: the agent answered a question only the image could answer.
   - Fallback (verified, kept in reserve): the tool returns a short text result, and a `wrap_model_call` middleware adds the images as a user message right after the tool result.
   - Either way the main agent sees the images; only the plumbing differs.
-- **Context control:** a `wrap_model_call` middleware keeps only the most recent `MAX_IMAGE_SETS_IN_CONTEXT` image sets in what is sent to the model, replacing older image blocks with `[images of p12–13 removed]`. Agent state is left intact. Verified with 1 kept set: images sent per model call were 0, 1, 1.
+- **Context control:** a `wrap_model_call` middleware keeps only the most recent `MAX_IMAGE_SETS_IN_CONTEXT` image sets in what is sent to the model, replacing each older image block with a short text placeholder; the page labels (`Document: <name>, page <n>:`) stay, so the model knows which pages to ask for again. Agent state is left intact. Verified with 1 kept set: images sent per model call were 0, 1, 1.
 - Limits: `VIEW_PAGES_MAX_PAGES` per call (checked in the tool) and `VIEW_PAGES_MAX_CALLS` per query (middleware).
 - Cost: ~3.0–3.2k input tokens per page image for each model call it stays in context.
 
@@ -398,7 +400,7 @@ Answer quality depends on the chat model's reasoning; don't silently downgrade `
 - **Unit** (in-memory fakes of the Section 18 Protocols; no database, no network): figure detection (raster + vector cluster rule, on tiny generated PDFs), invisible-text writing (render unchanged, text extractable, marker on its own line), tool wrapping, citation parsing and mapping (drop unknown `doc_id`), ownership checks, dedup, status transitions.
 - **Enrichment check:** after indexing an enriched PDF, `get_page_content()` for a figure page contains the `[FIGURE DESCRIPTION ...]` text. The tree summary for that section usually mentions the figure (not guaranteed, 9.2). Automated as the opt-in live test `tests/integration/test_live_pipeline.py` (upload to indexed with every real part).
 - **Integration:** index a sample PDF, ask a known question, assert the cited page (spike: TDI-110 shut-off temperature → 60 °C / 140 °F, page 27).
-- **Image delivery check (automated, required):** ask a figure-only question whose answer is **not** in the figure description or text layer (spike: I-Series p30, "how many calibration points are Great, where is No data?" → 3, top centre). Also run a control where the tool returns no image and assert the agent says it cannot see it.
+- **Image delivery check (automated, required):** ask a figure-only question whose answer is **not** in the figure description or text layer (spike: I-Series p30, "how many calibration points are Great, where is No data?" → 3, top centre). Also run a control where the tool returns no usable image (a blank page) and assert the agent says it cannot see it. Automated in `tests/integration/test_live_image_delivery.py` (opt-in, `RUN_LIVE_TESTS=1`): the three original pages are indexed without figure descriptions, so only the image holds the answer.
 - **Isolation test:** user A cannot query or discover user B's documents, including via `view_pages` and citations.
 - **Eval set:** 20–30 question/answer/page triples over the 4 sample PDFs in `Data/`, with **at least a third answerable only from a figure** (screenshot, photo, drawing; the samples have no data charts). Track answer correctness, citation page accuracy, latency, and cost per query. Compare with and without enrichment to prove its value. Add chart questions if chart PDFs are added.
 
@@ -438,12 +440,11 @@ Details and numbers: `docs/spike-findings.md`.
 | 6 | Tools bound to `storage_path`? | **Yes**; per-user clients isolate (tools, `document_context`, SDK calls, citations). | Spike C |
 | 7 | Concurrent reads during an indexing write? | Safe in-process (0 errors in 108 reads); writes atomic. PageIndex's lock is a no-op on Windows → keep our per-user write lock; make it cross-process if we run several processes. | Spike C, source |
 | 8 | History position vs `document_context()`? | Keep: context → history → question. PageIndex's own chat lanes put the context first. Not separately tested. | PageIndex source |
-| 9 | Agent API, step limits, image trimming? | `create_agent` (LangChain 1.4.3); `ModelCallLimitMiddleware`, `ToolCallLimitMiddleware` (per tool); custom `wrap_model_call` trimmer. Timeout mechanics still open. | Spike B |
+| 9 | Agent API, step limits, image trimming? | `create_agent` (LangChain 1.4.3); `ModelCallLimitMiddleware`, `ToolCallLimitMiddleware` (per tool); custom `wrap_model_call` trimmer; timeout = per-call timeout plus a `before_model` deadline (5.6). | Spike B, step 6 |
 | 10 | `CHAT_MODEL` image input; `VISION_MODEL` choice? | `gpt-5.6-sol` reads images. `VISION_MODEL = gpt-5.6-luna` by default (accurate on key facts, ~$0.001/page); sol for faint small text (~$0.02/page). | Spike B, extra |
 | 11 | Ingestion time/cost; image tokens per query? | Indexing measured: 32 pages, 32.6 s, ≈ $0.02. Estimate for 100 pages with ~33 figure pages: ~2–3 min, ≈ $0.10 with luna descriptions (≈ $0.70 with sol). ~3.0–3.2k tokens per page image per model call. | Spike A, D, extra |
 
 **Still open**
-- Agent timeout implementation (`AGENT_TIMEOUT_S`): per-call `ChatOpenAI(timeout=...)` plus an overall deadline around the run.
 - Tracing tool (LangSmith vs OpenTelemetry).
 - Cross-process locking if the service runs as more than one process.
 - A process stopped between PageIndex finishing and the registry update leaves an unregistered entry in the user's PageIndex library; the re-queued rerun indexes the file again under a `_1` name. Rare; needs a PageIndex listing to clean up.
@@ -536,6 +537,7 @@ Where the extra components sit:
 | `FigureDescriber` | Protocol | wraps the OpenAI SDK | `vision/openai_describer.py` |
 | `PageRenderer` | Protocol | wraps PyMuPDF; faked in tests | `pdf/rendering.py` |
 | `AnswerAgent` | Protocol | wraps LangChain; faked in tests | `agent/builder.py` |
+| `QuestionAnswering` | class (frozen dataclass) | the query use case; holds its ports, builds the per-user `PageViewer` | `operations/query.py` |
 | `DocumentIngestion` | class (frozen dataclass) | the ingestion use case; holds its ports | `operations/ingestion.py` |
 | `IngestionWorker` | class | queue watcher and thread pool | `worker/runner.py` |
 | `SqlRepository` base | ABC | the two SQL repositories share session and commit code | `db/base.py` |
@@ -543,6 +545,6 @@ Where the extra components sit:
 | `PageViewer` (`(doc_name, pages) -> list[PageImage]`) | Callable alias | built per request by `operations/query.py`, bound to the user | `operations/` |
 | Image-trimming middleware | LangChain `@wrap_model_call` (or one-level `AgentMiddleware` subclass) | framework hook | `agent/middleware.py` |
 
-Domain exceptions (in `operations/errors.py`, mapped to HTTP in `api/`): `DocumentNotFound` (404, also for other users' documents), `DocumentNotReady` (409), `UnsupportedFile` (415), `FileTooLarge` (413), `TooManyPages` (413), `ScannedDocument` (sets `failed`), `DuplicateDocument` (repository-level; the upload returns the existing record), `ViewPagesRejected` (message returned to the agent). All derive from `VectorlessRagError`.
+Domain exceptions (in `operations/errors.py`, mapped to HTTP in `api/`): `DocumentNotFound` (404, also for other users' documents), `DocumentNotReady` (409), `UnsupportedFile` (415), `FileTooLarge` (413), `TooManyPages` (413), `ScannedDocument` (sets `failed`), `DuplicateDocument` (repository-level; the upload returns the existing record), `ViewPagesRejected` (message returned to the agent), `AnswerIncomplete` (504: the agent hit its step limit or deadline). All derive from `VectorlessRagError`.
 
 User keys: `operations/users.py` derives `user_key = uuid5(fixed namespace, user_id)`; every folder under `DATA_ROOT` uses it.
