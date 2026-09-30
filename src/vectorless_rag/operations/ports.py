@@ -91,6 +91,9 @@ class FileStore(Protocol):
 
 # ── PDF steps, rendering and vision ──
 
+CountPages = Callable[[bytes], int]
+"""Pages of an uploaded file. Raises UnsupportedFile unless it is a readable PDF without a password."""
+
 ReadPageTexts = Callable[[Path], list[str]]
 """Text layer of every page, in page order (scanned check, describer context)."""
 

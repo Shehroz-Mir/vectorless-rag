@@ -1,8 +1,12 @@
 from pathlib import Path
 
+import pymupdf
+import pytest
+
 from tests.sample_pdfs import DEFAULT_DETECTION_RULES, build_pdf, drawing, image, table, text
 from vectorless_rag.models import FigureKind
-from vectorless_rag.pdf import detect_figure_pages, read_page_texts
+from vectorless_rag.operations import UnsupportedFile
+from vectorless_rag.pdf import count_pages, detect_figure_pages, read_page_texts
 
 
 def test_reads_every_page_text_in_order(tmp_path: Path) -> None:
@@ -55,3 +59,14 @@ def test_image_partly_off_the_page_counts_only_its_visible_part(tmp_path: Path) 
     pdf = build_pdf(tmp_path / "o.pdf", [[image((580, 800, 900, 1200))]])  # only ~15×42 pt visible
 
     assert detect_figure_pages(pdf, DEFAULT_DETECTION_RULES) == []
+
+
+def test_uploads_are_counted_and_unreadable_ones_rejected(tmp_path: Path) -> None:
+    pdf = build_pdf(tmp_path / "three.pdf", [[text("a")], [text("b")], [text("c")]])
+    with pymupdf.open(pdf) as doc:
+        locked = doc.tobytes(encryption=5, user_pw="user", owner_pw="owner")  # 5: PDF_ENCRYPT_AES_256, missing from the stubs
+
+    assert count_pages(pdf.read_bytes()) == 3
+    for data, message in [(b"", "not a readable PDF"), (b"%PDF-1.7 broken", "not a readable PDF"), (locked, "password")]:
+        with pytest.raises(UnsupportedFile, match=message):
+            count_pages(data)

@@ -17,6 +17,7 @@ dependencies = [
     "pymupdf==1.28.2",
     "fastapi==0.141.1",
     "uvicorn==0.54.0",
+    "python-multipart==0.0.32",  # FastAPI file uploads
     "sqlalchemy==2.1.1",
     "pydantic==2.13.5",
     "pydantic-settings==2.15.0",
@@ -25,6 +26,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest==9.1.1",
+    "httpx2==2.13.1",  # what starlette's TestClient uses
     "pyright==1.1.414",
 ]
 

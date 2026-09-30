@@ -219,6 +219,18 @@ renders every page blank. About 10-20 cents per run.
   or `end`; `ModelCallLimitMiddleware` is `end` (adds a "limits exceeded" AI message) or `error`.
   `GenericFakeChatModel` scripts tool calls for unit tests; it needs a no-op `bind_tools` for `create_agent`.
 
+## Step 7 checks — the service end to end (2026-09-30)
+
+**Ran:** `tests/integration/test_live_service.py` (FastAPI `TestClient`, every real part, SQLite in a
+temp folder), and a one-off run of `python -m vectorless_rag.api` with an HTTP upload.
+
+**Result:**
+- Over HTTP: upload `202` → worker enriched and indexed TDI-110 pp. 26-27 → `/query` answered 60 °C /
+  140 °F cited to page 2 → user B: `404` on the document, empty list, no citations. 50 s in all.
+- Real server on Windows: upload `202` → `completed` after 26 s, 2 figure pages (photo, line drawing)
+  described → figures listed → `DELETE` `204`. PageIndex's worker processes start fine under
+  `python -m vectorless_rag.api` (the `__main__` guard).
+
 ## Not tested (still open)
 
 - Q8 (history vs `document_context()` order): not tested. PageIndex's own chat lanes put the context

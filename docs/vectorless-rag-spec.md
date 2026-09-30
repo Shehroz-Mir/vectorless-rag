@@ -112,7 +112,7 @@ Page numbers are identical in both, so citations work for either.
 
 ### 5.1 API layer
 - FastAPI. Plain `def` endpoints (FastAPI runs them in its thread pool): PageIndex, PyMuPDF and the agent are synchronous libraries.
-- Every request carries a trusted `user_id` from the upstream auth layer.
+- Every request carries a trusted `user_id` from the upstream auth layer, in the `X-User-Id` header. A request without it answers `401`.
 - All document IDs in requests are checked against the registry for ownership before use. Another user's document answers **404**, the same as a missing one, so existence is not leaked.
 
 ### 5.2 Document registry (our DB)
@@ -281,6 +281,10 @@ Unique constraints: `(user_id, file_sha256)`, where re-uploading the same file r
 
 Another user's document ID answers `404`, like a missing one.
 
+Other statuses: `DELETE` answers `204`. Errors come back as `{"detail": "..."}`: `401` (no `X-User-Id`), `404` (document not found), `409` (a selected document is not `completed` yet), `413` (over `MAX_UPLOAD_MB` or `MAX_PAGES`), `415` (not a readable PDF, or password-protected), `504` (`AnswerIncomplete`: the agent hit its step limit or deadline).
+
+A document record shows `id`, `filename`, `status`, `page_count`, `figure_page_count`, `error`, `created_at` and `updated_at`; file paths and PageIndex ids stay inside. A figure record shows `page`, `figure_index`, `kind`, `description`, `vision_model` and the token counts.
+
 **POST /query request**
 ```json
 {
@@ -323,7 +327,7 @@ Streaming (`/query/stream`) is a later item.
 **Delete**
 1. Check ownership.
 2. Under the per-user lock: `client.delete_document(pageindex_doc_id)`.
-3. Remove both files, figure descriptions, and the registry row.
+3. Still under the lock: remove figure descriptions, the registry row and both files. Removing the row under the lock is what lets ingestion re-check it before indexing (5.4). While one of the user's documents is being indexed, a delete waits for it.
 
 ---
 
@@ -482,7 +486,8 @@ Details and numbers: `docs/spike-findings.md`.
 | PDF | `pymupdf` | 1.28.2 | verified |
 | Settings | `pydantic-settings` (`.env` support) | 2.15.0 | latest on PyPI, not yet installed |
 | Validation | `pydantic` | 2.13.5 | installed (transitive) |
-| API | `fastapi` + `uvicorn` | 0.141.1 / 0.54.0 | latest on PyPI, not yet installed |
+| API | `fastapi` + `uvicorn` + `python-multipart` (uploads) | 0.141.1 / 0.54.0 / 0.0.32 | installed |
+| API tests | `httpx2` (what Starlette's `TestClient` uses) | 2.13.1 | installed (dev) |
 | DB | `SQLAlchemy` 2.x (sync); SQLite dev, Postgres prod | 2.1.1 | latest on PyPI, not yet installed |
 | Tests | `pytest` | 9.1.1 | latest on PyPI, not yet installed |
 | Types | `pyright`, standard mode | 1.1.414 | installed |
@@ -531,6 +536,7 @@ Where the extra components sit:
 | `DocumentRepository` | Protocol | faked in tests | `db/documents.py` |
 | `FigureRepository` | Protocol | faked in tests | `db/figures.py` |
 | `FileStore` | Protocol | faked in tests | `storage/files.py` |
+| `DocumentLibrary` | class (frozen dataclass) | upload checks, dedup, list, read, delete; holds its ports | `operations/documents.py` |
 | `UserIndex` (submit, delete, document context, tools, citations for one user) | Protocol | wraps the PageIndex SDK | `indexing/user_index.py` |
 | `UserIndexProvider` (`for_user(user_key) -> UserIndex`) | Protocol | wraps the SDK client pool | `indexing/client_pool.py` |
 | `UserLocks` (`for_user(user_key) -> context manager`) | Protocol | faked in tests; held around every write to a user's PageIndex library | `worker/locks.py` |
@@ -541,7 +547,7 @@ Where the extra components sit:
 | `DocumentIngestion` | class (frozen dataclass) | the ingestion use case; holds its ports | `operations/ingestion.py` |
 | `IngestionWorker` | class | queue watcher and thread pool | `worker/runner.py` |
 | `SqlRepository` base | ABC | the two SQL repositories share session and commit code | `db/base.py` |
-| `ReadPageTexts`, `DetectFigurePages`, `WriteInvisibleNotes` (Callable aliases in `ports.py`); page-spec parsing, citation mapping | plain functions | stateless steps; thresholds bound with `functools.partial` | `pdf/`, `operations/` |
+| `CountPages`, `ReadPageTexts`, `DetectFigurePages`, `WriteInvisibleNotes` (Callable aliases in `ports.py`); page-spec parsing, citation mapping | plain functions | stateless steps; thresholds bound with `functools.partial` | `pdf/`, `operations/` |
 | `PageViewer` (`(doc_name, pages) -> list[PageImage]`) | Callable alias | built per request by `operations/query.py`, bound to the user | `operations/` |
 | Image-trimming middleware | LangChain `@wrap_model_call` (or one-level `AgentMiddleware` subclass) | framework hook | `agent/middleware.py` |
 

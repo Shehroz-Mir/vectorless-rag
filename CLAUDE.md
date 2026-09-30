@@ -40,7 +40,9 @@ python -m venv .venv && .venv/Scripts/python -m pip install -e ".[dev]"
 .venv/Scripts/pyright                     # src + tests; must report 0 errors
 .venv/Scripts/python -m pytest
 RUN_LIVE_TESTS=1 .venv/Scripts/python -m pytest tests/integration   # also runs the tests that call OpenAI (cents)
-.venv/Scripts/python -m uvicorn vectorless_rag.api.main:app --reload   # once api/ exists
+.venv/Scripts/python -m vectorless_rag.api                              # the service on :8000, docs at /docs
+.venv/Scripts/python -m uvicorn vectorless_rag.api.main:app --reload   # the same, reloading on edits
+# every request needs the X-User-Id header (the trusted user id from upstream auth)
 
 # Spikes (throwaway; own venv and pyright config)
 python -m venv spikes/.venv && spikes/.venv/Scripts/python -m pip install -r spikes/requirements.txt

@@ -1,4 +1,5 @@
-"""Typed records shared by every layer: documents, figures, index results, queries."""
+"""Typed records shared by every layer: documents, figures, index results, queries, API views."""
+from vectorless_rag.models.api import DocumentOut, FigureOut
 from vectorless_rag.models.documents import Document, DocumentChanges, DocumentStatus, NewDocument
 from vectorless_rag.models.figures import (
     BoundingBox,
@@ -20,10 +21,12 @@ __all__ = [
     "DetectedFigure",
     "Document",
     "DocumentChanges",
+    "DocumentOut",
     "DocumentStatus",
     "FigureDescription",
     "FigureKind",
     "FigureNote",
+    "FigureOut",
     "FigurePage",
     "IndexCitation",
     "IndexedDocument",

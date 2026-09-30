@@ -1,4 +1,5 @@
-"""Use cases (ingestion, question answering) and their contracts: ports, domain errors, user keys."""
+"""Use cases (documents, ingestion, question answering) and their contracts: ports, domain errors, user keys."""
+from vectorless_rag.operations.documents import DocumentLibrary, Upload
 from vectorless_rag.operations.errors import (
     AnswerIncomplete,
     DocumentNotFound,
@@ -14,6 +15,7 @@ from vectorless_rag.operations.errors import (
 from vectorless_rag.operations.ingestion import DocumentIngestion, IngestionRules, requeue_interrupted
 from vectorless_rag.operations.ports import (
     AnswerAgent,
+    CountPages,
     DetectFigurePages,
     DocumentRepository,
     FigureDescriber,
@@ -33,8 +35,10 @@ from vectorless_rag.operations.users import checked_user_key, user_key_for
 __all__ = [
     "AnswerAgent",
     "AnswerIncomplete",
+    "CountPages",
     "DetectFigurePages",
     "DocumentIngestion",
+    "DocumentLibrary",
     "DocumentNotFound",
     "DocumentNotReady",
     "DocumentRepository",
@@ -51,6 +55,7 @@ __all__ = [
     "ScannedDocument",
     "TooManyPages",
     "UnsupportedFile",
+    "Upload",
     "UserIndex",
     "UserIndexProvider",
     "UserLocks",
