@@ -6,6 +6,8 @@ look at page images itself. Answers carry page-level citations. Each user sees o
 
 - Spec (source of truth): `docs/vectorless-rag-spec.md` (v0.4). Read it before designing anything.
 - Verified facts behind the spec: `docs/spike-findings.md`.
+- Feature spec (locked v1.0, branch `feature/agent-runs-and-eval`): `docs/agent-runs-and-eval-spec.md`:
+  agent run records (brief/full `/query`), Langfuse seams, and the eval set and metrics. Build order: its Section 5.
 - If guidance conflicts: locked decisions in the spec > the rest of the spec > the
   python-clean-architecture plugin. Flag conflicts to the user instead of choosing silently.
 
