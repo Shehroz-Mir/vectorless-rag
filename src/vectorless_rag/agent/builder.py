@@ -1,7 +1,8 @@
 """The answering agent (implements ports.AnswerAgent; spec 5.6).
 
 A LangChain agent, built per question around a model shared by all questions: the user's read-only
-PageIndex tools plus view_pages, PageIndex's instructions plus our figure guidance, and the limits.
+PageIndex tools plus view_pages, PageIndex's instructions plus our figure guidance, the limits, and a
+recorder that returns the run (agent-runs spec 2.2).
 """
 from __future__ import annotations
 
@@ -12,8 +13,10 @@ from typing import Any
 from langchain.agents import create_agent
 from langchain.agents.middleware import AgentMiddleware, ModelCallLimitMiddleware, ToolCallLimitMiddleware
 from langchain.agents.middleware.model_call_limit import ModelCallLimitExceededError
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, AnyMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import StructuredTool
 from langchain_openai import ChatOpenAI
 from openai import APITimeoutError
@@ -21,8 +24,9 @@ from pydantic import SecretStr
 
 from vectorless_rag.agent.middleware import keep_latest_page_images, stop_at_deadline
 from vectorless_rag.agent.prompts import FIGURE_GUIDANCE
+from vectorless_rag.agent.recording import RunRecorder
 from vectorless_rag.agent.view_pages import ImageDetail, view_pages_tool
-from vectorless_rag.models import ChatMessage
+from vectorless_rag.models import AgentRun, ChatMessage, RunLabels
 from vectorless_rag.operations import AnswerIncomplete, PageViewer
 
 # After the tool-call limit blocks further calls, a couple of model turns to write the answer.
@@ -50,9 +54,11 @@ def create_chat_model(api_key: str, model: str, timeout_s: float) -> ChatOpenAI:
 
 
 class LangChainAnswerAgent:
-    def __init__(self, model: BaseChatModel, rules: AgentRules) -> None:
+    def __init__(self, model: BaseChatModel, rules: AgentRules, callbacks: Sequence[BaseCallbackHandler] = ()) -> None:
+        """`callbacks` go with every run, e.g. a tracing handler (agent-runs spec Part B); none for now."""
         self._model = model
         self._rules = rules
+        self._callbacks = list(callbacks)
 
     def answer(
         self,
@@ -60,20 +66,28 @@ class LangChainAnswerAgent:
         tools: Sequence[Callable[..., str]],
         view_pages: PageViewer,
         messages: Sequence[ChatMessage],
-    ) -> str:
+        labels: RunLabels,
+    ) -> AgentRun:
+        recorder = RunRecorder()
         agent = create_agent(
             self._model,
             tools=[*(StructuredTool.from_function(tool) for tool in tools), view_pages_tool(view_pages, self._rules.image_detail)],
             system_prompt=f"{instructions}\n\n{FIGURE_GUIDANCE}",
-            middleware=self._middleware(),
+            middleware=[recorder, *self._middleware()],
         )
+        config: RunnableConfig = {
+            "callbacks": self._callbacks,
+            "metadata": {"trace_id": labels.trace_id, "user_key": labels.user_key},
+        }
         try:
-            result = agent.invoke({"messages": [{"role": message.role, "content": message.content} for message in messages]})
+            result = agent.invoke({"messages": [{"role": message.role, "content": message.content} for message in messages]}, config)
+            return recorder.run(final_answer(result["messages"]))
         except ModelCallLimitExceededError as error:
-            raise AnswerIncomplete(f"no answer within {self._rules.max_steps} steps") from error
+            raise recorder.incomplete(f"no answer within {self._rules.max_steps} steps") from error
         except APITimeoutError as error:
-            raise AnswerIncomplete("the model did not answer in time") from error
-        return final_answer(result["messages"])
+            raise recorder.incomplete("the model did not answer in time") from error
+        except AnswerIncomplete as error:  # the deadline, or a run that ended without an answer
+            raise recorder.incomplete(str(error)) from error
 
     def _middleware(self) -> list[AgentMiddleware[Any, Any, Any]]:  # each has its own state type
         rules = self._rules

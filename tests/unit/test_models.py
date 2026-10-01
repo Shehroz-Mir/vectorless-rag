@@ -5,13 +5,46 @@ import pytest
 from pydantic import ValidationError
 
 from vectorless_rag.models import (
+    AgentRun,
     DetectedFigure,
     DocumentChanges,
     DocumentStatus,
     FigureKind,
     FigurePage,
+    ModelStep,
     NewDocument,
+    ToolOutcome,
+    ToolStep,
 )
+
+
+def tool(index: int, name: str, document: str, *pages: int, outcome: ToolOutcome = ToolOutcome.OK) -> ToolStep:
+    return ToolStep(index=index, tool=name, arguments={}, document=document, pages=pages, outcome=outcome, duration_ms=1)
+
+
+def test_totals_count_unique_pages_per_document_and_every_image_viewed() -> None:
+    run = AgentRun.of("Answer.", [
+        ModelStep(index=1, duration_ms=10, input_tokens=100, output_tokens=5, reasoning_tokens=3),
+        tool(2, "get_page_content", "a.pdf", 1, 2),
+        tool(3, "view_pages", "a.pdf", 2),
+        tool(4, "view_pages", "a.pdf", 2),
+        tool(5, "get_page_content", "b.pdf", 2),
+        tool(6, "view_pages", "b.pdf", outcome=ToolOutcome.BLOCKED),
+        ModelStep(index=7, duration_ms=10, input_tokens=200, output_tokens=7),
+    ], duration_ms=40)
+
+    assert run.totals.model_dump() == {
+        "model_calls": 2, "tool_calls": 5, "pages_read": 3, "images_viewed": 2,
+        "input_tokens": 300, "output_tokens": 12, "reasoning_tokens": 3, "duration_ms": 40,
+    }
+
+
+def test_a_run_survives_json_with_its_step_kinds() -> None:
+    run = AgentRun.of("A.", [ModelStep(index=1, duration_ms=1, tool_calls=("view_pages",)), tool(2, "view_pages", "a.pdf", 3)], duration_ms=2)
+
+    again = AgentRun.model_validate_json(run.model_dump_json())
+
+    assert again == run and [type(step) for step in again.steps] == [ModelStep, ToolStep]
 
 
 def test_changes_apply_only_the_fields_that_were_set() -> None:

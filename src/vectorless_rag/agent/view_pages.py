@@ -9,9 +9,9 @@ import base64
 from collections.abc import Sequence
 from typing import Any, Literal
 
-from langchain_core.tools import BaseTool, StructuredTool
+from langchain_core.tools import BaseTool, StructuredTool, ToolException
 
-from vectorless_rag.models import PageImage
+from vectorless_rag.models import VIEW_PAGES_TOOL, PageImage
 from vectorless_rag.operations import PageViewer, ViewPagesRejected
 
 ImageDetail = Literal["low", "high", "auto"]
@@ -30,9 +30,9 @@ def view_pages_tool(view_pages: PageViewer, detail: ImageDetail) -> BaseTool:
         try:
             return page_image_blocks(view_pages(doc_name, pages), detail)
         except ViewPagesRejected as error:
-            return str(error)  # the agent reads why and can ask again
+            raise ToolException(str(error)) from error  # an error result: the agent reads why and can ask again
 
-    return StructuredTool.from_function(view_pages_images, name="view_pages", parse_docstring=True)
+    return StructuredTool.from_function(view_pages_images, name=VIEW_PAGES_TOOL, parse_docstring=True, handle_tool_error=True)
 
 
 def page_image_blocks(images: Sequence[PageImage], detail: ImageDetail) -> list[dict[str, Any]]:

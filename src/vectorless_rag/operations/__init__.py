@@ -29,7 +29,7 @@ from vectorless_rag.operations.ports import (
     UserLocks,
     WriteInvisibleNotes,
 )
-from vectorless_rag.operations.query import QuestionAnswering, parse_pages
+from vectorless_rag.operations.query import QuestionAnswering, page_ranges, parse_pages
 from vectorless_rag.operations.users import checked_user_key, user_key_for
 
 __all__ = [
@@ -63,6 +63,7 @@ __all__ = [
     "ViewPagesRejected",
     "WriteInvisibleNotes",
     "checked_user_key",
+    "page_ranges",
     "parse_pages",
     "requeue_interrupted",
     "user_key_for",

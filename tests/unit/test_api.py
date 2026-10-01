@@ -17,7 +17,15 @@ from tests.fakes import (
     RecordingLocks,
 )
 from vectorless_rag.api import Services, create_app
-from vectorless_rag.models import ChatMessage, DocumentChanges, DocumentStatus, FigureKind, NewFigureDescription
+from vectorless_rag.models import (
+    AgentRun,
+    ChatMessage,
+    DocumentChanges,
+    DocumentStatus,
+    FigureKind,
+    NewFigureDescription,
+    RunLabels,
+)
 from vectorless_rag.operations import (
     AnswerAgent,
     AnswerIncomplete,
@@ -33,7 +41,10 @@ BOB = {"X-User-Id": "bob"}
 
 
 class GivesUp:
-    def answer(self, instructions: str, tools: Sequence[Callable[..., str]], view_pages: PageViewer, messages: Sequence[ChatMessage]) -> str:
+    def answer(
+        self, instructions: str, tools: Sequence[Callable[..., str]], view_pages: PageViewer,
+        messages: Sequence[ChatMessage], labels: RunLabels,
+    ) -> AgentRun:
         raise AnswerIncomplete("no answer within 20 steps")
 
 

@@ -2,16 +2,18 @@
 
 Checks the selected documents, builds the messages (document context, history, question), runs the
 answering agent with the user's read-only PageIndex tools and a view_pages bound to the user, then
-maps the answer's citations to our document IDs.
+maps the answer's citations to our document IDs. Each run is logged by its trace id and totals.
 """
 from __future__ import annotations
 
+import logging
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
 from vectorless_rag.models import (
+    AgentRun,
     ChatMessage,
     Citation,
     DocumentStatus,
@@ -19,8 +21,9 @@ from vectorless_rag.models import (
     PageImage,
     QueryRequest,
     QueryResponse,
+    RunLabels,
 )
-from vectorless_rag.operations.errors import DocumentNotFound, DocumentNotReady, ViewPagesRejected
+from vectorless_rag.operations.errors import AnswerIncomplete, DocumentNotFound, DocumentNotReady, ViewPagesRejected
 from vectorless_rag.operations.ports import (
     AnswerAgent,
     DocumentRepository,
@@ -31,6 +34,8 @@ from vectorless_rag.operations.ports import (
     UserIndexProvider,
 )
 from vectorless_rag.operations.users import user_key_for
+
+logger = logging.getLogger(__name__)
 
 _PAGE_PART = re.compile(r"(\d+)(?:-(\d+))?")
 
@@ -47,12 +52,20 @@ class QuestionAnswering:
     def answer(self, user_id: str, request: QueryRequest) -> QueryResponse:
         """Raises DocumentNotFound (also for other users' documents), DocumentNotReady, AnswerIncomplete."""
         index_ids = self._selected_index_ids(user_id, request.document_ids)
-        index = self.indexes.for_user(user_key_for(user_id))
-        reply = self.agent.answer(
-            index.agent_instructions(), index.agent_tools(), self.page_viewer(user_id), _messages(index, index_ids, request),
-        )
-        resolved = index.resolve_citations(reply)
-        return QueryResponse(answer=resolved.text, citations=self._citations(user_id, resolved.citations), trace_id=uuid4().hex)
+        user_key = user_key_for(user_id)
+        index = self.indexes.for_user(user_key)
+        labels = RunLabels(trace_id=uuid4().hex, user_key=user_key)  # before the run, so every record shares it
+        try:
+            run = self.agent.answer(
+                index.agent_instructions(), index.agent_tools(), self.page_viewer(user_id),
+                _messages(index, index_ids, request), labels,
+            )
+        except AnswerIncomplete as error:
+            _log_run(labels, error.run, outcome=f"incomplete ({error})")
+            raise
+        _log_run(labels, run, outcome="answered")
+        resolved = index.resolve_citations(run.answer)
+        return QueryResponse(answer=resolved.text, citations=self._citations(user_id, resolved.citations), trace_id=labels.trace_id)
 
     def page_viewer(self, user_id: str) -> PageViewer:
         """view_pages for one user (spec 5.7): the name is looked up among that user's documents only,
@@ -97,22 +110,37 @@ class QuestionAnswering:
         return tuple(mapped)
 
 
+def _log_run(labels: RunLabels, run: AgentRun | None, outcome: str) -> None:
+    """One line per question (agent-runs spec 2.6): the trace id and the totals, never the question or document text."""
+    totals = " ".join(f"{name}={value}" for name, value in run.totals.model_dump().items()) if run else "no run"
+    logger.info("question %s %s: %s", labels.trace_id, outcome, totals)
+
+
 def _messages(index: UserIndex, index_ids: Sequence[str], request: QueryRequest) -> list[ChatMessage]:
     """Spec 5.6: the document context first (only when documents are selected), then history, then the question."""
     context = [ChatMessage(role="user", content=index.document_context(index_ids))] if index_ids else []
     return [*context, *request.history, ChatMessage(role="user", content=request.question)]
 
 
-def parse_pages(spec: str, page_count: int, max_pages: int) -> list[int]:
-    """Page numbers from "12", "12,13" or "12-13", in the order asked and without repeats.
-    Anything else raises ViewPagesRejected with a message the agent can act on."""
-    pages: list[int] = []
+def page_ranges(spec: str) -> list[tuple[int, int]]:
+    """The (first, last) ranges of a page spec: "12", "12,13", "12-13" or a mix such as "1-3,7".
+    Only the syntax is checked; anything else raises ViewPagesRejected."""
+    ranges: list[tuple[int, int]] = []
     for part in spec.replace(" ", "").split(","):
         match = _PAGE_PART.fullmatch(part)
         if match is None:
             raise ViewPagesRejected(f"Pages must look like '12', '12,13' or '12-13', not {spec!r}.")
-        first, last = int(match[1]), int(match[2] or match[1])
+        ranges.append((int(match[1]), int(match[2] or match[1])))
+    return ranges
+
+
+def parse_pages(spec: str, page_count: int, max_pages: int) -> list[int]:
+    """Page numbers from a page spec, in the order asked and without repeats. A bad spec, or more
+    than the document or the limit allows, raises ViewPagesRejected with a message the agent can act on."""
+    pages: list[int] = []
+    for first, last in page_ranges(spec):
         if not 1 <= first <= last <= page_count:
+            part = str(first) if first == last else f"{first}-{last}"
             raise ViewPagesRejected(f"This document has pages 1-{page_count}; {part!r} is outside that.")
         if last - first >= max_pages:
             raise ViewPagesRejected(f"At most {max_pages} pages per call.")

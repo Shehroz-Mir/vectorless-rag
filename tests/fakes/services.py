@@ -6,7 +6,16 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from uuid import uuid4
 
-from vectorless_rag.models import ChatMessage, IndexCitation, IndexedDocument, PageDescription, ResolvedAnswer
+from vectorless_rag.models import (
+    AgentRun,
+    ChatMessage,
+    IndexCitation,
+    IndexedDocument,
+    ModelStep,
+    PageDescription,
+    ResolvedAnswer,
+    RunLabels,
+)
 from vectorless_rag.operations import DocumentNotFound, PageViewer
 
 _CITE_TAG = re.compile(r'<cite doc="(?P<doc>[^"]+)" page="(?P<page>\d+)"\s*/>')
@@ -89,11 +98,11 @@ class FakeUserIndexProvider:
 
 
 class FakeAnswerAgent:
-    """Returns a scripted reply and records what it was asked."""
+    """Answers with a scripted reply in a one-step run and records what it was asked."""
 
     def __init__(self, reply: str) -> None:
         self.reply = reply
-        self.calls: list[tuple[str, list[Callable[..., str]], PageViewer, list[ChatMessage]]] = []
+        self.calls: list[tuple[str, list[Callable[..., str]], PageViewer, list[ChatMessage], RunLabels]] = []
 
     def answer(
         self,
@@ -101,6 +110,8 @@ class FakeAnswerAgent:
         tools: Sequence[Callable[..., str]],
         view_pages: PageViewer,
         messages: Sequence[ChatMessage],
-    ) -> str:
-        self.calls.append((instructions, list(tools), view_pages, list(messages)))
-        return self.reply
+        labels: RunLabels,
+    ) -> AgentRun:
+        self.calls.append((instructions, list(tools), view_pages, list(messages), labels))
+        step = ModelStep(index=1, duration_ms=5, input_tokens=100, output_tokens=10, text=self.reply)
+        return AgentRun.of(self.reply, [step], duration_ms=5)

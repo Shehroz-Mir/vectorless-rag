@@ -8,40 +8,20 @@ from typing import Any
 import httpx
 
 import pytest
-from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.outputs import ChatResult
 from openai import APITimeoutError
-from pydantic import Field, SecretStr
+from pydantic import SecretStr
 
+from tests.scripted_model import ScriptedModel, call, script
 from vectorless_rag.agent import AgentRules, LangChainAnswerAgent, create_chat_model
 from vectorless_rag.agent.middleware import REMOVED_IMAGE  # internal: the placeholder text
-from vectorless_rag.models import ChatMessage, PageImage
+from vectorless_rag.models import ChatMessage, PageImage, RunLabels
 from vectorless_rag.operations import AnswerAgent, AnswerIncomplete, PageViewer, ViewPagesRejected
 
 RULES = AgentRules(max_steps=20, view_pages_max_calls=4, max_image_sets=2, image_detail="high", timeout_s=60)
 QUESTION = [ChatMessage(role="user", content="How many points are Great?")]
-
-
-class ScriptedModel(GenericFakeChatModel):
-    """Replies from a script and records every list of messages it is sent."""
-
-    received: list[list[BaseMessage]] = Field(default_factory=list)
-
-    def bind_tools(self, tools: Any, **kwargs: Any) -> "ScriptedModel":  # type: ignore[override]
-        return self  # the script decides which tools to call
-
-    def _generate(self, messages: list[BaseMessage], stop: list[str] | None = None, run_manager: Any = None, **kwargs: Any) -> ChatResult:
-        self.received.append(list(messages))
-        return super()._generate(messages, stop=stop, run_manager=run_manager, **kwargs)
-
-
-def script(*replies: AIMessage | str) -> ScriptedModel:
-    return ScriptedModel(messages=iter(replies))
-
-
-def call(name: str, call_id: str = "call_1", **args: str) -> AIMessage:
-    return AIMessage(content="", tool_calls=[{"name": name, "args": args, "id": call_id, "type": "tool_call"}])
+LABELS = RunLabels(trace_id="trace-1", user_key="u_alice")
 
 
 def pages_of(doc_name: str, pages: str) -> list[PageImage]:
@@ -56,7 +36,7 @@ def answer(
     tools: Sequence[Callable[..., str]] = (),
     view_pages: PageViewer = pages_of,
 ) -> str:
-    return LangChainAnswerAgent(model, rules).answer("PAGEINDEX RULES", tools, view_pages, messages)
+    return LangChainAnswerAgent(model, rules).answer("PAGEINDEX RULES", tools, view_pages, messages, LABELS).answer
 
 
 def tool_messages(sent: list[BaseMessage]) -> list[ToolMessage]:

@@ -15,6 +15,7 @@ from typing import Protocol
 from uuid import UUID
 
 from vectorless_rag.models import (
+    AgentRun,
     ChatMessage,
     Document,
     DocumentChanges,
@@ -28,6 +29,7 @@ from vectorless_rag.models import (
     PageDescription,
     PageImage,
     ResolvedAnswer,
+    RunLabels,
 )
 
 # ── registry and files ──
@@ -169,7 +171,9 @@ class AnswerAgent(Protocol):
         tools: Sequence[Callable[..., str]],
         view_pages: PageViewer,
         messages: Sequence[ChatMessage],
-    ) -> str:
+        labels: RunLabels,
+    ) -> AgentRun:
         """Run the agent over `messages` (context, history, question) with the user's PageIndex
-        `instructions` and read-only `tools` plus view_pages; return the answer with <cite> tags."""
+        `instructions` and read-only `tools` plus view_pages. The run's answer keeps its <cite> tags.
+        Raises AnswerIncomplete, carrying the run so far."""
         ...

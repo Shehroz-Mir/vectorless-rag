@@ -1,4 +1,7 @@
 """Domain errors raised by the use cases. The API maps them to HTTP statuses; the worker to `failed`."""
+from __future__ import annotations
+
+from vectorless_rag.models import AgentRun
 
 
 class VectorlessRagError(Exception):
@@ -38,4 +41,10 @@ class ViewPagesRejected(VectorlessRagError):
 
 
 class AnswerIncomplete(VectorlessRagError):
-    """The agent reached its step limit or deadline before it answered (AGENT_MAX_STEPS, AGENT_TIMEOUT_S)."""
+    """The agent reached its step limit or deadline before it answered (AGENT_MAX_STEPS, AGENT_TIMEOUT_S).
+
+    `run` holds what the agent did until then, so the logs and the eval still see it."""
+
+    def __init__(self, reason: str, run: AgentRun | None = None) -> None:
+        super().__init__(reason)
+        self.run = run
