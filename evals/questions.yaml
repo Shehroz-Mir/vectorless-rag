@@ -1,0 +1,289 @@
+# The eval set (agent-runs spec 4.1): 24 questions over the 4 sample manuals in Data/.
+#
+# Fields
+#   id            short name, used in the results
+#   question      asked as it is, without document_ids: the agent has to find the manual itself
+#   type          text | figure | multi_page | cross_document | unanswerable
+#   gold          where the answer is: document (file name in Data/) and 1-based pages of the original PDF.
+#                 Empty for unanswerable questions.
+#   figure_pages  pages whose image is needed to answer (figure questions; one multi_page question)
+#   answer        the reference answer the judge compares against
+#   key_facts     a correct answer must contain each of these (case, spacing and ° ignored);
+#                 "a|b" means either a or b counts, e.g. "3|three"
+#   evidence      what the gold pages say or show, so a reviewer can check the answer quickly
+#
+# Counts: text 8, figure 8, multi_page 3, cross_document 2, unanswerable 3.
+# Every gold page was checked: the text answers appear on that page only, and the figure answers are
+# not in the text layer (only in the image).
+
+# ── text: the answer is in the text layer ──
+
+- id: tdi110-shutoff-temperature
+  question: At what temperature does the TD I-110 shut itself off to avoid harm?
+  type: text
+  gold:
+    - document: TDI-110_UsersManual_en-US_WEB_1000958-01.pdf
+      pages: [27]
+  figure_pages: []
+  answer: It shuts itself off at 60 °C (140 °F), its maximum limit.
+  key_facts: ["60", "140"]
+  evidence: 'p27, Table 1: "Temperature DEVICE SHUT OFF — not to cause risk of harm. 60/140 (device max limit)"'
+
+- id: tdi110-amber-led
+  question: What does a solid amber LED mean on the TD I-110?
+  type: text
+  gold:
+    - document: TDI-110_UsersManual_en-US_WEB_1000958-01.pdf
+      pages: [16]
+  figure_pages: []
+  answer: A solid amber LED means a battery fault or that the device is overheating.
+  key_facts: ["battery fault", "overheat"]
+  evidence: 'p16, 4.2.1 LED Behavior: "Amber – Solid — Battery fault or device overheating"'
+
+- id: navio-usb-cable-length
+  question: What is the maximum length of the TD Navio's USB power cable, and is it shielded?
+  type: text
+  gold:
+    - document: TD_Navio_UsersManual_en-US_1000965-01.pdf
+      pages: [26]
+  figure_pages: []
+  answer: The DC power line (USB cable) is at most 1.6 m long and is shielded.
+  key_facts: ["1.6", "shielded"]
+  evidence: 'p26, Appendix C cable table: "DC Power Line (USB Cable) 1.6 m Shielded 1 Set DC Power"'
+
+- id: navio-face-id
+  question: Which TD Navio models support Face ID?
+  type: text
+  gold:
+    - document: TD_Navio_UsersManual_en-US_1000965-01.pdf
+      pages: [12]
+  figure_pages: []
+  answer: Only the TD Navio Maxi has Face ID. Touch ID is not available on any TD Navio.
+  key_facts: ["Maxi"]
+  evidence: 'p12, 3.1.3 Settings: "Touch ID is not available on the TD Navio. Face ID is only available on the TD Navio Maxi."'
+
+- id: iseries-battery-cycle-life
+  question: How many charge cycles is the TD I-Series battery pack rated for?
+  type: text
+  gold:
+    - document: TD_I-Series I-13_I-16_UsersManual_en-US_1000280.pdf
+      pages: [59]
+  figure_pages: []
+  answer: 500 cycles, after which at least 75% of the initial capacity remains.
+  key_facts: ["500"]
+  evidence: 'p59, D3 Battery pack: "Cycle Life 500 cycles Minimum 75% of initial capacity remaining"'
+
+- id: iseries-i16-brightness
+  question: How bright is the screen of the TD I-16?
+  type: text
+  gold:
+    - document: TD_I-Series I-13_I-16_UsersManual_en-US_1000280.pdf
+      pages: [58]
+  figure_pages: []
+  answer: The TD I-16's 15.6" screen has a brightness of 350 nits (the TD I-13 has 300 nits).
+  key_facts: ["350"]
+  evidence: 'p58, D1 Standard TD I-Series: "15.6ʺ, LED Backlight Unit Brightness: 350 Nits"'
+
+- id: pilot-dwell-time
+  question: When setting up Dwell Control on the TD Pilot, what dwell time does the manual tell you to start with?
+  type: text
+  gold:
+    - document: TobiiDynavox_TDPilot_UsersManual_en-GB_1001335-20.pdf
+      pages: [20]
+  figure_pages: []
+  answer: 1.5 seconds, as a starting point that can be changed later.
+  key_facts: ["1.5"]
+  evidence: 'p20, 5.5.4 step 8: "Select the – (minus sign) next to Seconds to change the dwell time to 1.5 seconds."'
+
+- id: pilot-ipad-version
+  question: Which iPad does the TD Pilot use, and which iPadOS version does it need?
+  type: text
+  gold:
+    - document: TobiiDynavox_TDPilot_UsersManual_en-GB_1001335-20.pdf
+      pages: [6]
+  figure_pages: []
+  answer: An Apple iPad Pro 13" running iPadOS 18 or later.
+  key_facts: ["iPad Pro", "18"]
+  evidence: 'p6, 1 Introduction: "TheTD Pilot is aEye tracking device with an Apple iPad Pro 13" running iPadOS version 18 or later."'
+
+# ── figure: the answer is only in a screenshot or drawing ──
+
+- id: iseries-calibration-results
+  question: In the TD I-Series calibration results example, how many calibration points are rated Great, and where is the point with No data?
+  type: figure
+  gold:
+    - document: TD_I-Series I-13_I-16_UsersManual_en-US_1000280.pdf
+      pages: [30]
+  figure_pages: [30]
+  answer: Three points are rated Great (middle left, centre and bottom centre). The No data point is at the top centre.
+  key_facts: ["3|three", "top"]
+  evidence: 'p30 screenshot of 9 points: top row Good / No data (red) / Good; middle row Great / Great / Good; bottom row Good / Great / Good. The text (p29) only lists the three statuses.'
+
+- id: iseries-feedback-colours
+  question: How many colours can be chosen for the eye-gaze feedback dot on the TD I-Series?
+  type: figure
+  gold:
+    - document: TD_I-Series I-13_I-16_UsersManual_en-US_1000280.pdf
+      pages: [35]
+  figure_pages: [35]
+  answer: 15 colours - Charcoal, Graphite, Pink, Ice, White, Navy, Royal, Cyan, Green, Yellow, Orange, Red, Coral, Fuchsia and Violet.
+  key_facts: ["15|fifteen"]
+  evidence: 'p35, Illustration 9: Available Colors: a picker with 3 rows of 5 named colours. The names appear only in the image.'
+
+- id: iseries-feedback-selected
+  question: In the TD I-Series Feedback tab screenshot, which feedback type and which feedback size are selected?
+  type: figure
+  gold:
+    - document: TD_I-Series I-13_I-16_UsersManual_en-US_1000280.pdf
+      pages: [34]
+  figure_pages: [34]
+  answer: Feedback type Clock and feedback size Medium are selected (the feedback colour is red).
+  key_facts: ["clock", "medium"]
+  evidence: 'p34, The Feedback Tab screenshot: the Clock and Medium boxes are ticked (blue). The text lists the options but not which is selected.'
+
+- id: tdi110-power-button-position
+  question: Where exactly is the power button on the TD I-110, and what is at the other end of the same edge?
+  type: figure
+  gold:
+    - document: TDI-110_UsersManual_en-US_WEB_1000958-01.pdf
+      pages: [14]
+  figure_pages: [14]
+  answer: Seen from the front, the power button is at the right end of the top edge; the volume buttons are at the left end.
+  key_facts: ["right", "volume"]
+  evidence: 'p14, Illustration 1: TD I-110 Tablet: position 1 (Power Button) top right, position 8 (Volume Buttons) top left. The text (p17) only says "on the top of the device".'
+
+- id: tdi110-hotspot-location
+  question: Where on the TD I-110 is the hotspot area that can get hottest?
+  type: figure
+  gold:
+    - document: TDI-110_UsersManual_en-US_WEB_1000958-01.pdf
+      pages: [27]
+  figure_pages: [27]
+  answer: On the back of the device, in the bottom-right corner (seen from behind), under the stand.
+  key_facts: ["back", "right"]
+  evidence: 'p27, Illustration 3: Hotspot Temperature Area: a red area at the lower right of the back. The text only says "surface under stand".'
+
+- id: navio-mini-front-camera
+  question: Where is the front camera on the TD Navio Mini, and how is that different from the TD Navio Midi?
+  type: figure
+  gold:
+    - document: TD_Navio_UsersManual_en-US_1000965-01.pdf
+      pages: [14]
+  figure_pages: [14]
+  answer: On the Mini the front camera is on the left edge of the front frame, halfway down. On the Midi it is at the top centre, below the handle, between the volume buttons.
+  key_facts: ["left", "top"]
+  evidence: 'p14, Mini front view: position 5 (Front Camera) on the left edge; Midi front view: position 4 (Front Camera) top centre. The tables give only the names.'
+
+- id: pilot-calibration-screen
+  question: What does the TD CoPilot calibration screen tell the user to do before calibrating?
+  type: figure
+  gold:
+    - document: TobiiDynavox_TDPilot_UsersManual_en-GB_1001335-20.pdf
+      pages: [28]
+  figure_pages: [28]
+  answer: 'It says "Center your eyes in the Track Status box.", above the Track Status box and the Calibrate button.'
+  key_facts: ["center|centre", "track status"]
+  evidence: 'p28, 6.1 Calibration screenshot: "Center your eyes in the Track Status box." with a green Calibrate button below. That line is only in the image.'
+
+- id: pilot-track-status-button
+  question: On the back of the TD Pilot, where is the Track Status button compared with the power button?
+  type: figure
+  gold:
+    - document: TobiiDynavox_TDPilot_UsersManual_en-GB_1001335-20.pdf
+      pages: [15]
+  figure_pages: [15]
+  answer: Both are near the top of the back, just below the handle. Seen from behind, the Track Status button is on the left and the power button on the right.
+  key_facts: ["left"]
+  evidence: 'p15, Illustration 3: Back and Left Side: position 13 (Track Status Button) upper left, position 9 (Power Button) upper right.'
+
+# ── multi_page: the answer needs two pages ──
+
+- id: iseries-battery-replacement
+  question: How do I replace the battery in a TD I-Series, and how do I make sure the new battery sits correctly?
+  type: multi_page
+  gold:
+    - document: TD_I-Series I-13_I-16_UsersManual_en-US_1000280.pdf
+      pages: [22, 23]
+  figure_pages: []
+  answer: Use only a TDGG2 battery pack. Shut the device down, disconnect power, lay it display down, undo the five Phillips screws of the battery cover, remove the cover and pull the battery strap. Push the new battery in so the two battery icons (one on the battery, one on the device) line up, refit the cover and tighten the five screws.
+  key_facts: ["five|5", "icon"]
+  evidence: 'p22, 4.3 steps 1-6 (TDGG2, five screws, battery strap); p23 steps 7-9: "Align the two battery icons, one is located on the battery and one on the device".'
+
+- id: navio-force-restart
+  question: How do I force restart a TD Navio Midi, and where are its two reset buttons?
+  type: multi_page
+  gold:
+    - document: TD_Navio_UsersManual_en-US_1000965-01.pdf
+      pages: [15, 19]
+  figure_pages: [15]
+  answer: Press and quickly release Reset button 1, then Reset button 2, then press and hold the power button until the Apple logo appears. On the Midi, both reset buttons are on the back, at the top, next to the back camera.
+  key_facts: ["reset", "apple"]
+  evidence: 'p19, 6.8 Force Restart steps 1-4; p15, Midi back view: positions 4 and 5 (Reset Button 1 and 2) at the top, beside position 3 (Back Camera).'
+
+- id: tdi110-reset-duration
+  question: How do I reset the TD I-110 to factory settings, and how long does "Remove everything" take?
+  type: multi_page
+  gold:
+    - document: TDI-110_UsersManual_en-US_WEB_1000958-01.pdf
+      pages: [19, 20]
+  figure_pages: []
+  answer: In Windows Settings go to Updates and Security, then Recovery, and select Get Started under Reset this PC; choose Keep my files or Remove everything. Remove everything without cleaning the drive (the default) takes about one hour; with Clean the drive it takes many hours.
+  key_facts: ["recovery", "one hour|1 hour", "many hours"]
+  evidence: 'p19, 5.8 steps 1-5 (Updates and Security, Recovery, Reset this PC); p20: "Without Clean the drive (default) — This option will take about one hour" and "With Clean the drive — This option will take many hours". (The I-Series manual has the same text on pp. 47-48.)'
+
+# ── cross_document: the answer needs two manuals ──
+
+- id: tdi110-vs-navio-maxi-weight
+  question: Which is heavier, the TD I-110 or the TD Navio Maxi?
+  type: cross_document
+  gold:
+    - document: TDI-110_UsersManual_en-US_WEB_1000958-01.pdf
+      pages: [28]
+    - document: TD_Navio_UsersManual_en-US_1000965-01.pdf
+      pages: [29]
+  figure_pages: []
+  answer: The TD Navio Maxi, at 1.54 kg (3.4 lbs), against 1.4 kg (3.1 lbs) for the TD I-110.
+  key_facts: ["1.54", "1.4"]
+  evidence: 'TD I-110 p28, D1: "Weight 1.4 kg 3.1 lbs"; TD Navio p29, D1: "Weight 0.86 kg / 1.27 kg / 1.54 kg" for Mini / Midi / Maxi.'
+
+- id: iseries-vs-pilot-battery-run-time
+  question: Which has the longer typical battery run time, the TD I-Series or the TD Pilot?
+  type: cross_document
+  gold:
+    - document: TD_I-Series I-13_I-16_UsersManual_en-US_1000280.pdf
+      pages: [58]
+    - document: TobiiDynavox_TDPilot_UsersManual_en-GB_1001335-20.pdf
+      pages: [43]
+  figure_pages: []
+  answer: The TD Pilot, with a typical average of about 10 hours, against about 6.5 hours (up to 8 h) for the TD I-Series.
+  key_facts: ["10", "6.5"]
+  evidence: 'I-Series p58, D1: "Battery Run Time Up to 8 h; Typical Average Battery Run Time ~6.5 h"; TD Pilot p43, D1: "Typical Average Battery Run Time ~10 hours".'
+
+# ── unanswerable: the manuals do not contain the answer ──
+
+- id: navio-warranty-years
+  question: How many years of warranty come with the TD Navio?
+  type: unanswerable
+  gold: []
+  figure_pages: []
+  answer: The manual does not state a warranty period; it refers to the warranty page on the Tobii Dynavox website. (The 5 years it mentions are the expected service life, not the warranty.)
+  key_facts: []
+  evidence: 'TD Navio p23, A2 Warranty: "Please read the warranty located here: https://www.tobiidynavox.com/pages/warranties." No manual gives a warranty length.'
+
+- id: tdi110-refresh-rate
+  question: What is the screen refresh rate of the TD I-110?
+  type: unanswerable
+  gold: []
+  figure_pages: []
+  answer: The manual does not give the screen refresh rate; it gives the size (10.1"), resolution (1920 × 1200) and touch panel only.
+  key_facts: []
+  evidence: 'TD I-110 p13 and p28 describe the screen without a refresh rate; no manual mentions one.'
+
+- id: navio-mini-brightness
+  question: How bright is the TD Navio Mini's screen, in nits?
+  type: unanswerable
+  gold: []
+  figure_pages: []
+  answer: The TD Navio manual does not give a screen brightness for any model. (Brightness in nits appears only for the TD I-Series.)
+  key_facts: []
+  evidence: 'TD Navio p13 and p29 give screen sizes and resolutions only; "nits" appears only in the I-Series manual (p58).'
