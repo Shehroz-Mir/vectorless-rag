@@ -1,6 +1,7 @@
-# Agent runs and evaluation — Spec (v0.1, draft for review)
+# Agent runs and evaluation — Spec (v1.0, locked)
 
-Status: proposed on branch `feature/agent-runs-and-eval`. Extends the main spec
+Status: locked on 2026-10-01 (decisions in Section 7); built on branch `feature/agent-runs-and-eval`.
+Extends the main spec
 (`docs/vectorless-rag-spec.md`, v0.4); Section 6 lists what changes there once this is built.
 
 Three parts:
@@ -79,7 +80,8 @@ blocks"). New setting:
 |---|---|---|
 | `AGENT_REASONING_SUMMARY` | `off`, `auto` or `detailed`: ask the answering model for reasoning summaries | `auto` |
 
-To check first (open question 1): whether `gpt-5.6-sol` returns summaries on our key, and what they cost.
+To check first (build step 3): whether `gpt-5.6-sol` returns summaries on our key, and what they cost.
+The default stays `auto` only if they work; otherwise `off`.
 
 ### 2.4 Port change
 
@@ -185,11 +187,11 @@ question with its answer, gold pages and evidence, and you review the file befor
   descriptions included). Built once and reused, under `evals/var/` (not committed).
 - Each question is asked **without** `document_ids`, so the agent has to find the right manual; that is
   what the document hit rate measures. One run per question by default (`--repeat N` for more).
-- Optional variant `plain`: a second library indexed from the original PDFs, without figure
-  descriptions, to show what enrichment adds (main spec 13).
-- Command: `python -m evals.run [--variant enriched|plain] [--only ID ...]`. Output in
-  `evals/results/<date>-<variant>/`: `results.jsonl` (one line per question: run, scores, judge reasons)
-  and `summary.md`.
+- Models: the indexing, vision and chat models come from the settings (`.env`), as in the service.
+- Not in this round: a `plain` library without figure descriptions, to show what enrichment adds
+  (main spec 13). It can be added later as a variant of the same runner.
+- Command: `python -m evals.run [--only ID ...]`. Output in `evals/results/<date>/`: `results.jsonl`
+  (one line per question: run, scores, judge reasons) and `summary.md`. Both are committed.
 
 ### 4.3 Retrieval metrics
 
@@ -219,7 +221,7 @@ questions have no gold pages: they count only for navigation cost.
 | **Refusal accuracy** | Unanswerable questions: the agent says the documents do not contain it and invents nothing (judge). Answerable questions: the false-refusal rate |
 
 The judge:
-- `gpt-5.6-sol` through the Responses API, one call per question returning JSON with each judged score
+- `EVAL_JUDGE_MODEL` (default `gpt-5.6-sol`) through the Responses API, one call per question returning JSON with each judged score
   and a one-line reason. It sees the question, the reference answer, the agent's answer, and the evidence
   the agent saw (page text it read, images of pages it viewed).
 - Its reasons are stored, and you spot-check about 5 questions per run, because a judge can be wrong too.
@@ -236,7 +238,7 @@ The judge:
 
 - Building the library once: about $0.20 (180 pages, 60 figure pages described).
 - Per run of 24 questions: answering about $0.05–0.10 each, judging about $0.02 each, so **about $2–3**
-  and 15–25 minutes. The `plain` variant adds its own indexing and a second run.
+  and 15–25 minutes.
 
 ### 4.7 Where the code goes
 
@@ -280,10 +282,12 @@ measures the real system.
 
 ---
 
-## 7. Open questions
+## 7. Decisions (2026-10-01)
 
-1. Does `gpt-5.6-sol` return reasoning summaries on our key, and at what cost? (A spike decides the default.)
-2. Judge model: `gpt-5.6-sol` (stronger, ~$0.02 per question) or `gpt-5.6-luna` (cheaper)?
-3. Run the `plain` variant (no figure descriptions) in the first run, or later?
-4. Commit `summary.md` files, or keep all results local?
-5. Are these the right definitions of dead ends and of "opened a document"?
+1. Reasoning summaries: checked on our key in build step 3; `AGENT_REASONING_SUMMARY` defaults to
+   `auto` if they work, `off` otherwise.
+2. Judge model: `gpt-5.6-sol`, as the default of a new setting `EVAL_JUDGE_MODEL`. The indexing,
+   vision and chat models come from `.env`, as in the service.
+3. No with/without-enrichment comparison in this round; only the agreed workflow (Section 5).
+4. Results are committed: `results.jsonl` and `summary.md` under `evals/results/<date>/`.
+5. The definitions of dead ends and of "opened a document" (4.3) are confirmed.
