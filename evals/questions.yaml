@@ -8,7 +8,7 @@
 #                 Empty for unanswerable questions.
 #   figure_pages  pages whose image is needed to answer (figure questions; one multi_page question)
 #   answer        the reference answer the judge compares against
-#   key_facts     a correct answer must contain each of these (case, spacing and ° ignored);
+#   key_facts     a correct answer must contain each of these (case, spaces, ° and curly quotes ignored);
 #                 "a|b" means either a or b counts, e.g. "3|three"
 #   evidence      what the gold pages say or show, so a reviewer can check the answer quickly
 #

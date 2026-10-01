@@ -39,12 +39,15 @@ Postgres prod) · pydantic / pydantic-settings · pytest · pyright. Models: `gp
 # Service
 cp .env.example .env                      # then set OPENAI_API_KEY; every setting is listed there
 python -m venv .venv && .venv/Scripts/python -m pip install -e ".[dev]"
-.venv/Scripts/pyright                     # src + tests; must report 0 errors
+.venv/Scripts/pyright                     # src, tests and evals; must report 0 errors
 .venv/Scripts/python -m pytest
 RUN_LIVE_TESTS=1 .venv/Scripts/python -m pytest tests/integration   # also runs the tests that call OpenAI (cents)
 .venv/Scripts/python -m vectorless_rag.api                              # the service on :8000, docs at /docs
 .venv/Scripts/python -m uvicorn vectorless_rag.api.main:app --reload   # the same, reloading on edits
 # every request needs the X-User-Id header (the trusted user id from upstream auth)
+
+# Eval (calls OpenAI: ~$2-3 per full run; the library is built once under evals/var/)
+.venv/Scripts/python -m evals.run [--only ID ...] [--repeat N]   # writes evals/results/<date>/
 
 # Spikes (throwaway; own venv and pyright config)
 python -m venv spikes/.venv && spikes/.venv/Scripts/python -m pip install -r spikes/requirements.txt
@@ -59,6 +62,8 @@ Restart Claude Code after changing `pyrightconfig.json` so the pyright LSP reloa
 docs/            spec and spike findings
 Data/            sample PDFs: read-only test input, never write here
 spikes/          throwaway experiments (own venv); outputs in spikes/out/
+evals/           the eval (feature spec Part C): questions.yaml, run.py (its composition root),
+                 metrics, judge, report; results/ committed, var/ (the eval library) not
 src/vectorless_rag/   (spec Section 18; filled in step by step)
   api/ worker/        entry points and composition roots
   operations/         use cases + ports.py (Protocols) + errors.py

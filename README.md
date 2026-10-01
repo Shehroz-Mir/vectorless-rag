@@ -119,13 +119,20 @@ them all with their defaults. The main ones:
 ## Development
 
 ```bash
-.venv/Scripts/pyright                                      # type check src and tests: 0 errors expected
+.venv/Scripts/pyright                                      # type check src, tests and evals: 0 errors expected
 .venv/Scripts/python -m pytest                             # unit and integration tests, no network
 RUN_LIVE_TESTS=1 .venv/Scripts/python -m pytest tests/integration   # also the tests that call OpenAI (cents)
+.venv/Scripts/python -m evals.run                          # the eval: 24 questions, about $2-3 (calls OpenAI)
 ```
 
 The live tests include the required image-delivery check: a question only a page image can answer,
 plus a control with a blank image where the agent must say it cannot see the answer.
+
+The eval (`evals/`) asks the questions in `evals/questions.yaml` through the real service, without
+choosing documents, and scores how the agent found pages and how good its answers are; an LLM judge
+(`EVAL_JUDGE_MODEL`, default `gpt-5.6-sol`) grades the answers. The first run builds the eval library
+from `Data/` under `evals/var/`; later runs reuse it. `--only ID ...` asks some questions, `--repeat N`
+asks each one N times. Each run writes `results.jsonl` and `summary.md` to `evals/results/<date>/`.
 
 ```
 src/vectorless_rag/
@@ -135,6 +142,7 @@ src/vectorless_rag/
   db/ pdf/ vision/ indexing/ agent/ storage/   adapters behind those ports
   models/       shared Pydantic records
 tests/          fakes/ (in-memory ports), unit/, integration/
+evals/          the eval set, runner, metrics, judge and report; results/ holds past runs
 docs/           spec and spike findings
 spikes/         the throwaway experiments behind the spec
 Data/           sample PDFs used as read-only test input

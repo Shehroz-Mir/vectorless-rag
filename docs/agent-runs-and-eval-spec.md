@@ -251,12 +251,21 @@ The judge:
 ```
 evals/                 a development tool next to the service, not part of it
   questions.yaml       the reviewed eval set
+  questions.py         loads and checks it
+  config.py            EVAL_JUDGE_MODEL and the price table
   run.py               entry point: builds the library, asks the questions, writes results
   metrics.py           pure functions: (question, AgentRun) -> scores
   judge.py             the LLM judge
   report.py            summary.md
-tests/unit/test_eval_metrics.py   the metric functions on hand-made runs
+tests/unit/test_eval_metrics.py   the metric functions on hand-made runs, and the eval set file
+tests/unit/test_eval_judge.py     the judge against a fake HTTP layer
+tests/unit/test_eval_run.py       the runner and report on in-memory fakes
 ```
+
+As built (step 5): a key fact may list alternatives as `"a|b"`, and key facts ignore all spaces as
+well as case, `°` and curly quotes, so "60 °C" and "60°C" match. A run that ends without an answer is
+not judged and scores 0 for correctness and relevance. A judge failure leaves the judged scores empty
+and the run goes on. A day's second run writes to `<date>-2/`, so nothing is overwritten.
 
 The runner reuses the service's own pieces (ingestion, `QuestionAnswering`, `detail="full"`), so it
 measures the real system.

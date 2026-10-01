@@ -28,6 +28,7 @@ dev = [
     "pytest==9.1.1",
     "httpx2==2.13.1",  # what starlette's TestClient uses
     "pyright==1.1.414",
+    "pyyaml==6.0.3",  # evals/questions.yaml
 ]
 
 [tool.setuptools.packages.find]
