@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from langchain.agents import create_agent
 from langchain.agents.middleware import AgentMiddleware, ModelCallLimitMiddleware, ToolCallLimitMiddleware
@@ -35,6 +35,8 @@ EXTRA_MODEL_CALLS = 2
 # keeps hanging can hold a question for (1 + MODEL_RETRIES) x AGENT_TIMEOUT_S before it fails.
 MODEL_RETRIES = 2
 
+ReasoningSummary = Literal["off", "auto", "detailed"]  # AGENT_REASONING_SUMMARY
+
 
 @dataclass(frozen=True)
 class AgentRules:
@@ -45,11 +47,14 @@ class AgentRules:
     timeout_s: float
 
 
-def create_chat_model(api_key: str, model: str, timeout_s: float) -> ChatOpenAI:
+def create_chat_model(api_key: str, model: str, timeout_s: float, *, reasoning_summary: ReasoningSummary) -> ChatOpenAI:
     """The answering model, on the Responses API: Chat Completions silently drops images in tool
-    results, and rejects tools with reasoning for gpt-5.6-sol (Spike B)."""
+    results, and rejects tools with reasoning for gpt-5.6-sol (Spike B). Unless `reasoning_summary`
+    is "off", the model also returns summaries of its reasoning; the effort stays the model's default."""
+    reasoning = None if reasoning_summary == "off" else {"summary": reasoning_summary}
     return ChatOpenAI(
         model=model, api_key=SecretStr(api_key), use_responses_api=True, timeout=timeout_s, max_retries=MODEL_RETRIES,
+        reasoning=reasoning,
     )
 
 

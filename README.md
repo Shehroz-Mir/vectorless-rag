@@ -114,6 +114,7 @@ them all with their defaults. The main ones:
 | `DATABASE_URL` | `sqlite:///./var/app.db` | The registry (Postgres in production) |
 | `MAX_UPLOAD_MB` / `MAX_PAGES` | `50` / `500` | Upload limits |
 | `AGENT_MAX_STEPS` / `AGENT_TIMEOUT_S` | `20` / `120` | Limits per question |
+| `AGENT_REASONING_SUMMARY` | `auto` | `off`, `auto` or `detailed`: the model's reasoning summaries in the full `/query` steps |
 
 ## Development
 

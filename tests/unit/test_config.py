@@ -5,7 +5,9 @@ from pydantic import ValidationError
 
 from vectorless_rag.config import load_settings
 
-SETTINGS_VARS = ("OPENAI_API_KEY", "CHAT_MODEL", "VISION_MODEL", "INDEX_MODEL", "MIN_IMAGE_AREA_RATIO", "RENDER_DPI")
+SETTINGS_VARS = (
+    "OPENAI_API_KEY", "CHAT_MODEL", "VISION_MODEL", "INDEX_MODEL", "MIN_IMAGE_AREA_RATIO", "RENDER_DPI", "AGENT_REASONING_SUMMARY",
+)
 
 
 @pytest.fixture(autouse=True)
@@ -25,6 +27,7 @@ def test_defaults_match_spec() -> None:
     assert settings.data_root == Path("var")
     assert settings.min_image_area_ratio == 0.03
     assert settings.view_pages_image_detail == "high"
+    assert settings.agent_reasoning_summary == "auto"
     assert settings.max_upload_bytes == 50 * 1024 * 1024
 
 
@@ -74,7 +77,9 @@ def test_env_example_lists_every_setting_with_its_default() -> None:
     assert from_example == defaults
 
 
-@pytest.mark.parametrize("name, value", [("MIN_IMAGE_AREA_RATIO", "1.5"), ("RENDER_DPI", "10"), ("CHAT_MODEL", "")])
+@pytest.mark.parametrize("name, value", [
+    ("MIN_IMAGE_AREA_RATIO", "1.5"), ("RENDER_DPI", "10"), ("CHAT_MODEL", ""), ("AGENT_REASONING_SUMMARY", "verbose"),
+])
 def test_invalid_values_are_rejected(monkeypatch: pytest.MonkeyPatch, name: str, value: str) -> None:
     monkeypatch.setenv(name, value)
 

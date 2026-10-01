@@ -86,6 +86,9 @@ blocks"). New setting:
 To check first (build step 3): whether `gpt-5.6-sol` returns summaries on our key, and what they cost.
 The default stays `auto` only if they work; otherwise `off`.
 
+Checked on 2026-10-01 (`docs/spike-findings.md`, "Agent-runs step 3"): they work, with no visible extra
+cost; a model call that barely reasons gets none. The default is `auto`.
+
 ### 2.4 Port change
 
 ```python

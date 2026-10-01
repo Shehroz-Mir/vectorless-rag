@@ -14,7 +14,7 @@ from openai import APITimeoutError
 from pydantic import SecretStr
 
 from tests.scripted_model import ScriptedModel, call, script
-from vectorless_rag.agent import AgentRules, LangChainAnswerAgent, create_chat_model
+from vectorless_rag.agent import AgentRules, LangChainAnswerAgent, ReasoningSummary, create_chat_model
 from vectorless_rag.agent.middleware import REMOVED_IMAGE  # internal: the placeholder text
 from vectorless_rag.models import ChatMessage, PageImage, RunLabels
 from vectorless_rag.operations import AnswerAgent, AnswerIncomplete, PageViewer, ViewPagesRejected
@@ -161,10 +161,17 @@ def test_a_run_that_ends_without_text_is_incomplete() -> None:
 
 
 def test_the_chat_model_uses_the_responses_api_and_the_given_key() -> None:
-    model = create_chat_model("sk-test", "gpt-5.6-sol", timeout_s=30)
+    model = create_chat_model("sk-test", "gpt-5.6-sol", timeout_s=30, reasoning_summary="auto")
 
     assert (model.model_name, model.use_responses_api, model.request_timeout, model.max_retries) == ("gpt-5.6-sol", True, 30, 2)
     assert isinstance(model.openai_api_key, SecretStr) and model.openai_api_key.get_secret_value() == "sk-test"
+
+
+@pytest.mark.parametrize("summary, reasoning", [("off", None), ("auto", {"summary": "auto"}), ("detailed", {"summary": "detailed"})])
+def test_the_chat_model_asks_for_reasoning_summaries_unless_off(summary: ReasoningSummary, reasoning: dict[str, str] | None) -> None:
+    model = create_chat_model("sk-test", "gpt-5.6-sol", timeout_s=30, reasoning_summary=summary)
+
+    assert model.reasoning == reasoning  # the effort is left to the model's default
 
 
 def test_the_agent_satisfies_the_port() -> None:

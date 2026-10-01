@@ -52,6 +52,8 @@ class Settings(BaseSettings):
     max_image_sets_in_context: PositiveInt = 2
     agent_max_steps: PositiveInt = 20
     agent_timeout_s: PositiveFloat = 120
+    # Ask the answering model for summaries of its reasoning; they show in the run's steps (agent-runs spec 2.3).
+    agent_reasoning_summary: Literal["off", "auto", "detailed"] = "auto"
 
     # Storage and uploads. Data/ holds read-only sample PDFs; app files live under data_root.
     data_root: Path = Path("var")

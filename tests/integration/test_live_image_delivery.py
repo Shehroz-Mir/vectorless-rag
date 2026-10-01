@@ -68,7 +68,9 @@ class CalibrationLibrary:
         ))
         self.settings = settings
         self.agent = LangChainAnswerAgent(
-            create_chat_model(api_key, settings.chat_model, settings.agent_timeout_s),
+            create_chat_model(
+                api_key, settings.chat_model, settings.agent_timeout_s, reasoning_summary=settings.agent_reasoning_summary,
+            ),
             AgentRules(
                 max_steps=settings.agent_max_steps, view_pages_max_calls=settings.view_pages_max_calls,
                 max_image_sets=settings.max_image_sets_in_context, image_detail=settings.view_pages_image_detail,

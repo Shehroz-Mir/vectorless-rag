@@ -231,6 +231,26 @@ temp folder), and a one-off run of `python -m vectorless_rag.api` with an HTTP u
   described → figures listed → `DELETE` `204`. PageIndex's worker processes start fine under
   `python -m vectorless_rag.api` (the `__main__` guard).
 
+## Agent-runs step 3 — reasoning summaries (2026-10-01)
+
+**Ran:** a one-off script: our `LangChainAnswerAgent` with the run recorder, `gpt-5.6-sol` on our key,
+one fake `get_page_content` tool (page 27: "shuts itself off at 60 °C (140 °F)"). Asked once with
+`reasoning.summary` off / auto / detailed on a lookup question, then twice each on a question with
+some arithmetic. About 9,000 input and 2,500 output tokens in all.
+
+**Result:**
+- `auto` and `detailed` both return summaries, as LangChain `reasoning` content blocks; the recorder
+  puts them in `ModelStep.reasoning_summary`. One summary of 380-510 characters per model call that
+  reasons more than about 100 tokens; a call with ~10 reasoning tokens (the lookup) gets none.
+- `detailed` was not longer than `auto` here (440-470 vs 490-510 characters).
+- Cost: no visible extra. Arithmetic question, totals per run: output 379 / 352 tokens off,
+  426 / 376 auto, 347 / 332 detailed; reasoning 168-202 tokens either way. The spread between two runs
+  of one setting is as large as between settings. Time per run 7-10 s either way.
+- A model call after a summarised one (the summary goes back in the history) works.
+- Summaries can be loose: one said "+3.5°F" for a step that was 3.5 °C. They explain, they are not evidence.
+
+**Conclusion:** `AGENT_REASONING_SUMMARY` defaults to `auto` (agent-runs spec decision 1).
+
 ## Not tested (still open)
 
 - Q8 (history vs `document_context()` order): not tested. PageIndex's own chat lanes put the context

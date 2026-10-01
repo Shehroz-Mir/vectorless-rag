@@ -50,7 +50,9 @@ def build_services(settings: Settings) -> Services:
         settings, documents=documents, figures=figures, files=files, renderer=renderer, indexes=indexes, locks=locks,
     )
     agent = LangChainAnswerAgent(
-        create_chat_model(api_key, settings.chat_model, settings.agent_timeout_s),
+        create_chat_model(
+            api_key, settings.chat_model, settings.agent_timeout_s, reasoning_summary=settings.agent_reasoning_summary,
+        ),
         AgentRules(
             max_steps=settings.agent_max_steps,
             view_pages_max_calls=settings.view_pages_max_calls,
