@@ -22,10 +22,12 @@ from vectorless_rag.models import (
     DocumentChanges,
     DocumentStatus,
     FigureKind,
+    FullQueryResponse,
     ModelStep,
     NewDocument,
     NewFigureDescription,
     QueryRequest,
+    QueryResponse,
     RunLabels,
 )
 from vectorless_rag.operations import (
@@ -149,8 +151,20 @@ def test_each_question_logs_its_trace_id_and_totals_but_not_its_text(caplog: pyt
         response = harness.qa.answer("alice", QueryRequest(question="A private question?"))
 
     (line,) = caplog.messages
-    assert line.startswith(f"question {response.trace_id} answered: model_calls=1 tool_calls=0")
+    assert line.startswith(f"question {response.trace_id} answered: model_calls=2 tool_calls=1 pages_read=1")
     assert "private" not in line and "secret" not in line
+
+
+def test_a_brief_response_has_the_runs_totals_and_a_full_one_also_its_steps() -> None:
+    harness = Harness()
+    harness.indexed()
+
+    brief = harness.qa.answer("alice", QueryRequest(question="?"))
+    full = harness.qa.answer("alice", QueryRequest(question="?", detail="full"))
+
+    assert type(brief) is QueryResponse and brief.stats == harness.agent.run.totals
+    assert isinstance(full, FullQueryResponse) and full.steps == harness.agent.run.steps
+    assert (full.answer, full.stats) == (brief.answer, brief.stats)
 
 
 class GivesUp:

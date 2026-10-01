@@ -175,6 +175,33 @@ def test_a_question_gets_an_answer_with_citations() -> None:
     assert body["trace_id"]
 
 
+def test_a_brief_answer_has_stats_but_no_steps(client: TestClient) -> None:
+    body = client.post("/query", headers=ALICE, json={"question": "How hot?"}).json()
+
+    assert set(body) == {"answer", "citations", "trace_id", "stats"}
+    assert body["stats"] == {
+        "model_calls": 2, "tool_calls": 1, "pages_read": 1, "images_viewed": 0,
+        "input_tokens": 300, "output_tokens": 30, "reasoning_tokens": 0, "duration_ms": 12,
+    }
+
+
+def test_a_full_answer_also_lists_the_steps(client: TestClient) -> None:
+    body = client.post("/query", headers=ALICE, json={"question": "How hot?", "detail": "full"}).json()
+
+    assert set(body) == {"answer", "citations", "trace_id", "stats", "steps"}
+    assert [(step["index"], step["kind"]) for step in body["steps"]] == [(1, "model"), (2, "tool"), (3, "model")]
+    assert body["steps"][1] == {
+        "kind": "tool", "index": 2, "tool": "get_page_content", "arguments": {"doc_name": "manual.pdf", "pages": "27"},
+        "document": "manual.pdf", "pages": [27], "outcome": "ok", "result_preview": '{"success": true}', "duration_ms": 1,
+    }
+
+
+def test_an_unknown_detail_is_422(client: TestClient) -> None:
+    response = client.post("/query", headers=ALICE, json={"question": "?", "detail": "everything"})
+
+    assert response.status_code == 422
+
+
 def test_a_question_about_a_document_still_being_indexed_is_409(api: Api, client: TestClient) -> None:
     document = api.upload(client).json()
 

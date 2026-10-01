@@ -77,17 +77,23 @@ curl -H "X-User-Id: alice" -H "Content-Type: application/json" \
 | `GET` | `/documents/{id}` | One document, with its status and figure count |
 | `GET` | `/documents/{id}/figures` | The stored figure descriptions |
 | `DELETE` | `/documents/{id}` | Delete from PageIndex, the registry and disk |
-| `POST` | `/query` | Ask a question: `question`, optional `document_ids` and `history` |
+| `POST` | `/query` | Ask a question: `question`, optional `document_ids`, `history` and `detail` |
 
-An answer looks like this; `[1]` points at the first citation:
+An answer looks like this; `[1]` points at the first citation, and `stats` sums up how the agent got there:
 
 ```json
 {
   "answer": "It shuts itself off at 60 °C (140 °F). [1]",
   "citations": [{"index": 1, "document_id": "…", "filename": "manual.pdf", "page": 27, "from_figure": false}],
-  "trace_id": "…"
+  "trace_id": "…",
+  "stats": {"model_calls": 3, "tool_calls": 2, "pages_read": 1, "images_viewed": 0,
+            "input_tokens": 18234, "output_tokens": 412, "reasoning_tokens": 256, "duration_ms": 9120}
 }
 ```
+
+With `"detail": "full"` the answer also lists `steps`: every model call (tokens, the tools it asked for)
+and every tool call (arguments, pages read, `ok` / `error` / `blocked`, the first 2,000 characters of
+the result) in order. Page images show only as `[page image: manual.pdf p30]`.
 
 Errors are `{"detail": "..."}` with `401` (no user header), `404` (no such document for this user),
 `409` (document not indexed yet), `413` (file too large or too many pages), `415` (not a readable

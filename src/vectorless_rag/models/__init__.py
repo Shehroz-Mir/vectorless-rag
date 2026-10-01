@@ -12,7 +12,15 @@ from vectorless_rag.models.figures import (
     PageDescription,
 )
 from vectorless_rag.models.index import IndexCitation, IndexedDocument, ResolvedAnswer
-from vectorless_rag.models.query import ChatMessage, Citation, PageImage, QueryRequest, QueryResponse
+from vectorless_rag.models.query import (
+    ChatMessage,
+    Citation,
+    FullQueryResponse,
+    PageImage,
+    QueryDetail,
+    QueryRequest,
+    QueryResponse,
+)
 from vectorless_rag.models.runs import (
     VIEW_PAGES_TOOL,
     AgentRun,
@@ -40,6 +48,7 @@ __all__ = [
     "FigureNote",
     "FigureOut",
     "FigurePage",
+    "FullQueryResponse",
     "IndexCitation",
     "IndexedDocument",
     "ModelStep",
@@ -47,6 +56,7 @@ __all__ = [
     "NewFigureDescription",
     "PageDescription",
     "PageImage",
+    "QueryDetail",
     "QueryRequest",
     "QueryResponse",
     "ResolvedAnswer",

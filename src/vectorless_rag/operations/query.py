@@ -17,6 +17,7 @@ from vectorless_rag.models import (
     ChatMessage,
     Citation,
     DocumentStatus,
+    FullQueryResponse,
     IndexCitation,
     PageImage,
     QueryRequest,
@@ -50,7 +51,8 @@ class QuestionAnswering:
     view_pages_max_pages: int
 
     def answer(self, user_id: str, request: QueryRequest) -> QueryResponse:
-        """Raises DocumentNotFound (also for other users' documents), DocumentNotReady, AnswerIncomplete."""
+        """A FullQueryResponse when `request.detail` is "full". Raises DocumentNotFound (also for other
+        users' documents), DocumentNotReady, AnswerIncomplete."""
         index_ids = self._selected_index_ids(user_id, request.document_ids)
         user_key = user_key_for(user_id)
         index = self.indexes.for_user(user_key)
@@ -65,7 +67,11 @@ class QuestionAnswering:
             raise
         _log_run(labels, run, outcome="answered")
         resolved = index.resolve_citations(run.answer)
-        return QueryResponse(answer=resolved.text, citations=self._citations(user_id, resolved.citations), trace_id=labels.trace_id)
+        response = QueryResponse(
+            answer=resolved.text, citations=self._citations(user_id, resolved.citations), trace_id=labels.trace_id,
+            stats=run.totals,
+        )
+        return FullQueryResponse(**dict(response), steps=run.steps) if request.detail == "full" else response
 
     def page_viewer(self, user_id: str) -> PageViewer:
         """view_pages for one user (spec 5.7): the name is looked up among that user's documents only,

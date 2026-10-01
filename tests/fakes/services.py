@@ -15,6 +15,8 @@ from vectorless_rag.models import (
     PageDescription,
     ResolvedAnswer,
     RunLabels,
+    ToolOutcome,
+    ToolStep,
 )
 from vectorless_rag.operations import DocumentNotFound, PageViewer
 
@@ -98,10 +100,17 @@ class FakeUserIndexProvider:
 
 
 class FakeAnswerAgent:
-    """Answers with a scripted reply in a one-step run and records what it was asked."""
+    """Answers with a scripted reply (a page read, then the answer) and records what it was asked."""
 
     def __init__(self, reply: str) -> None:
-        self.reply = reply
+        self.run = AgentRun.of(reply, [
+            ModelStep(index=1, duration_ms=5, input_tokens=100, output_tokens=10, tool_calls=("get_page_content",)),
+            ToolStep(
+                index=2, tool="get_page_content", arguments={"doc_name": "manual.pdf", "pages": "27"}, document="manual.pdf",
+                pages=(27,), outcome=ToolOutcome.OK, result_preview='{"success": true}', duration_ms=1,
+            ),
+            ModelStep(index=3, duration_ms=5, input_tokens=200, output_tokens=20, text=reply),
+        ], duration_ms=12)
         self.calls: list[tuple[str, list[Callable[..., str]], PageViewer, list[ChatMessage], RunLabels]] = []
 
     def answer(
@@ -113,5 +122,4 @@ class FakeAnswerAgent:
         labels: RunLabels,
     ) -> AgentRun:
         self.calls.append((instructions, list(tools), view_pages, list(messages), labels))
-        step = ModelStep(index=1, duration_ms=5, input_tokens=100, output_tokens=10, text=self.reply)
-        return AgentRun.of(self.reply, [step], duration_ms=5)
+        return self.run
