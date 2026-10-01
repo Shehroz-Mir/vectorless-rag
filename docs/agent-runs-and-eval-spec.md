@@ -63,8 +63,11 @@ Each step is either a model call or a tool call.
 - A recording middleware in `agent/` (`wrap_model_call` and `wrap_tool_call`) times each call and
   appends a step to a recorder that belongs to one question. The agent is already built per question,
   so the recorder is too.
-- Tokens come from each `AIMessage.usage_metadata`. Pages come from the tool arguments, using the same
-  page-spec rules as `view_pages` (`"12"`, `"12,13"`, `"12-13"`).
+- Tokens come from each `AIMessage.usage_metadata`. Pages are the pages the agent actually got, in the
+  page-spec format of `view_pages` (`"12"`, `"12,13"`, `"12-13"`): for `view_pages`, the pages in its
+  arguments (it shows all of them or rejects the call); for `get_page_content`, the `returned_pages`
+  PageIndex reports, which leave out pages past the end of the document and pages cut to keep the
+  reply under its size limit (decision 6). The arguments stay in the step as sent.
 - A tool result is `error` when PageIndex returns `{"error": ...}` or `view_pages` returns its
   rejection text; `blocked` when a `ToolCallLimitMiddleware` stopped the call.
 - The run is recorded even when it ends in `AnswerIncomplete`: the error carries the partial run, so the
@@ -291,3 +294,6 @@ measures the real system.
 3. No with/without-enrichment comparison in this round; only the agreed workflow (Section 5).
 4. Results are committed: `results.jsonl` and `summary.md` under `evals/results/<date>/`.
 5. The definitions of dead ends and of "opened a document" (4.3) are confirmed.
+6. (2026-10-01, during build step 1) A page counts as read only if the agent actually got it: for
+   `get_page_content`, PageIndex's `returned_pages`, not the pages asked for (2.2). Otherwise a reply
+   cut for size would count pages the agent never saw, and page recall would be too high.
